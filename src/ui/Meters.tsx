@@ -1,5 +1,5 @@
 import { METER_IDS, moodFrom, type MeterId } from '../game/meters'
-import { currentMeters, useDog } from '../game/store'
+import { activeActivity, currentMeters, useDog } from '../game/store'
 import { useNow } from '../game/useNow'
 
 const LABELS: Record<MeterId, { icon: string; label: string; color: string }> = {
@@ -42,11 +42,13 @@ export function MoodBubble() {
   const name = useDog((s) => s.name)
   const now = useNow()
   const values = currentMeters(meters, now)
-  const kind = now < activity.until ? activity.kind : 'idle'
+  const { kind } = activeActivity(activity, now)
   const mood = moodFrom(values)
 
   let text = `${name} wacht op je aandacht.`
   if (kind === 'sleep') text = 'Zzz… 💤'
+  else if (kind === 'sulk') text = `${name} draait zich om. Hmpf. 😤`
+  else if (kind === 'joy') text = `${name} is zó blij dat je er weer bent! 🎉`
   else if (kind === 'eat') text = 'Nom nom nom! 😋'
   else if (kind === 'pet')
     text = activity.zone === 'head' ? 'Ja, precies daar!' : 'Hmmm, lekker…'

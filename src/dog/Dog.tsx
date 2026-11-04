@@ -46,6 +46,8 @@ export function Dog({ look }: { look: Appearance }) {
   const tongue = useRef<Mesh>(null)
 
   const pose = useRef({
+    turn: 0,
+    hop: 0,
     lie: 0,
     headX: 0,
     wag: 0,
@@ -148,25 +150,28 @@ export function Dog({ look }: { look: Appearance }) {
     const sleeping = act.kind === 'sleep'
     const eating = act.kind === 'eat'
     const petting = act.kind === 'pet'
-    const sulking = mood === 'sulking' && !sleeping && !eating && !petting
+    const offended = act.kind === 'sulk'
+    const joy = act.kind === 'joy'
+    const sulking = (mood === 'sulking' || offended) && !sleeping && !eating && !petting
 
     p.lie = damp(p.lie, sleeping ? 1 : sulking ? 0.55 : 0, 4, dt)
     p.sad = damp(p.sad, sulking ? 1 : 0, 3, dt)
     const blink = t % 3.7 < 0.12 ? 0.1 : 1
     p.eyes = damp(p.eyes, sleeping ? 0.08 : blink, 25, dt)
-    const mouthTarget = petting
-      ? 1
-      : eating
-        ? 0.5 + 0.5 * Math.abs(Math.sin(t * 9))
-        : sleeping || sulking
-          ? 0
-          : mood === 'happy'
-            ? 0.55 + 0.15 * Math.sin(t * 8)
-            : 0.12
+    const mouthTarget =
+      petting || joy
+        ? 1
+        : eating
+          ? 0.5 + 0.5 * Math.abs(Math.sin(t * 9))
+          : sleeping || sulking
+            ? 0
+            : mood === 'happy'
+              ? 0.55 + 0.15 * Math.sin(t * 8)
+              : 0.12
     p.mouth = damp(p.mouth, mouthTarget, 10, dt)
     p.tongue = damp(
       p.tongue,
-      petting || (mood === 'happy' && !sleeping && !eating)
+      petting || joy || (mood === 'happy' && !sleeping && !eating && !offended)
         ? 1
         : mood === 'neutral' && !sleeping && !eating
           ? 0.25
@@ -176,15 +181,17 @@ export function Dog({ look }: { look: Appearance }) {
     )
     p.earDrop = damp(p.earDrop, sulking || sleeping ? 0.5 : 0, 4, dt)
 
-    const wagTarget = petting
-      ? act.zone === 'belly'
-        ? 14
-        : 10
-      : sulking || sleeping
-        ? 0
-        : mood === 'happy'
-          ? 5
-          : 2.5
+    const wagTarget = joy
+      ? 14
+      : petting
+        ? act.zone === 'belly'
+          ? 14
+          : 10
+        : sulking || sleeping
+          ? 0
+          : mood === 'happy'
+            ? 5
+            : 2.5
     p.wag = damp(p.wag, wagTarget, 5, dt)
     p.kick = damp(p.kick, petting && act.zone === 'head' ? 1 : 0, 10, dt)
 
@@ -197,7 +204,12 @@ export function Dog({ look }: { look: Appearance }) {
           : 0
     p.headX = damp(p.headX, headTarget, 8, dt)
 
+    // Offended: turns his back on you. Overjoyed: hops around.
+    p.turn = damp(p.turn, offended ? 2.5 : 0, 5, dt)
+    p.hop = damp(p.hop, joy ? Math.abs(Math.sin(t * 9)) * 0.28 : 0, 18, dt)
     if (root.current) {
+      root.current.rotation.y = p.turn
+      root.current.position.y = p.hop
       const breathe = 1 + Math.sin(t * (sleeping ? 1.4 : 2.2)) * 0.012
       root.current.scale.set(look.size, look.size * breathe, look.size)
     }

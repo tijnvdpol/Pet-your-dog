@@ -172,9 +172,9 @@ Vijf fases; elke fase levert een werkende versie op die je kunt laten zien. Begi
 - [ ] Supabase-project, Auth (e-mail magic link + Google)
 - [ ] Tabellen `profiles`, `dogs`, `dog_stats` met RLS
 - [ ] Status opslaan/laden; meters doorrekenen sinds laatste bezoek
-- [ ] Mokkig-gedrag en het "beledigd, dan blij"-welkom
-- [ ] PWA: manifest, iconen, offline cache, installatie-onboarding
-- [ ] Deploy naar Vercel
+- [x] Mokkig-gedrag en het "beledigd, dan blij"-welkom (na 3 uur weg; test met `?dev` → Welkom)
+- [x] PWA: manifest, iconen, offline cache, installatie-onboarding
+- [x] Deploy naar Vercel (project `pet-your-dog`, automatisch bij elke push)
 
 **Klaar als:** je kunt inloggen op twee apparaten en ziet dezelfde hond met correct gedaalde meters.
 

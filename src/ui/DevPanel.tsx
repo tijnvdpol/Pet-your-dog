@@ -5,6 +5,7 @@ import { useDog } from '../game/store'
 export function DevPanel() {
   const set = useDog((s) => s.setAppearance)
   const look = useDog((s) => s.appearance)
+  const welcome = useDog((s) => s.welcome)
   return (
     <div className="absolute inset-x-2 bottom-2 flex flex-wrap items-center gap-1 rounded-xl bg-white/80 p-2 text-xs">
       {Object.entries(PRESETS).map(([id, p]) => (
@@ -16,6 +17,12 @@ export function DevPanel() {
           {p.label}
         </button>
       ))}
+      <button
+        className="rounded-lg bg-white px-2 py-1 shadow"
+        onClick={() => welcome(24 * 3_600_000)}
+      >
+        Welkom
+      </button>
       <input
         type="color"
         value={look.furColor}
