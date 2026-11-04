@@ -1,7 +1,7 @@
 /** Everything that makes one dog look different from another. Drives the procedural model. */
 export type EarType = 'upright' | 'floppy' | 'half'
-/** `saddle` = dark back patch plus dark muzzle (shepherd-style). */
-export type Marking = 'none' | 'blaze' | 'socks' | 'mask' | 'spots' | 'saddle'
+/** `saddle` = dark back patch plus dark muzzle (shepherd-style); `patch` = cream head and chest with a dark patch around one eye. */
+export type Marking = 'none' | 'blaze' | 'socks' | 'mask' | 'spots' | 'saddle' | 'patch'
 
 export type BaseModel = 'large' | 'medium' | 'small'
 
@@ -52,6 +52,21 @@ export const withBaseModel = (look: Appearance, baseModel: BaseModel): Appearanc
 
 export const DEFAULT_APPEARANCE: Appearance = {
   baseModel: 'large',
+  size: 1.05,
+  build: 0.55,
+  bodyLength: 1,
+  legLength: 0.72,
+  snoutLength: 0.45,
+  tailLength: 1,
+  earType: 'floppy',
+  furColor: '#c4875a',
+  secondColor: '#9a603c',
+  marking: 'patch',
+}
+
+/** The previous default look, kept as the 'Golden' preset. */
+const GOLDEN: Appearance = {
+  baseModel: 'large',
   size: 1,
   build: 0.5,
   bodyLength: 1,
@@ -65,7 +80,8 @@ export const DEFAULT_APPEARANCE: Appearance = {
 }
 
 export const PRESETS: Record<string, { label: string; look: Appearance }> = {
-  golden: { label: 'Golden', look: DEFAULT_APPEARANCE },
+  pup: { label: 'Pup', look: DEFAULT_APPEARANCE },
+  golden: { label: 'Golden', look: GOLDEN },
   shepherd: {
     label: 'Herder',
     look: {

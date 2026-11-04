@@ -14,7 +14,14 @@ export function meshFromSdf(
   sdf: Sdf,
   bounds: Bounds,
   cell: number,
-  colorAt: (x: number, y: number, z: number, nx: number, ny: number, nz: number) => Color,
+  colorAt?: (
+    x: number,
+    y: number,
+    z: number,
+    nx: number,
+    ny: number,
+    nz: number,
+  ) => Color,
 ): BufferGeometry {
   const nx = Math.ceil((bounds.max[0] - bounds.min[0]) / cell) + 1
   const ny = Math.ceil((bounds.max[1] - bounds.min[1]) / cell) + 1
@@ -154,10 +161,12 @@ export function meshFromSdf(
     normals[v] = gx
     normals[v + 1] = gy
     normals[v + 2] = gz
-    const c = colorAt(x, y, z, gx, gy, gz)
-    colors[v] = c.r
-    colors[v + 1] = c.g
-    colors[v + 2] = c.b
+    if (colorAt) {
+      const c = colorAt(x, y, z, gx, gy, gz)
+      colors[v] = c.r
+      colors[v + 1] = c.g
+      colors[v + 2] = c.b
+    }
   }
 
   const geo = new BufferGeometry()

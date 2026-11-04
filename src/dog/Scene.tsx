@@ -23,8 +23,9 @@ export function Scene() {
         camera.lookAt(0, 0.8, 0.2)
       }}
     >
-      <hemisphereLight args={['#fff6e8', '#e8d9bd', 1.5]} />
-      <directionalLight position={[3, 5, 4]} intensity={2.4} />
+      <hemisphereLight args={['#fff3e0', '#e8d9bd', 1.1]} />
+      <directionalLight position={[3, 5, 4]} intensity={2.8} />
+      <directionalLight position={[-4, 2, 2]} intensity={0.7} />
       {/* Ground + cheap blob shadow */}
       <mesh rotation-x={-Math.PI / 2} position={[0, -0.001, 0]}>
         <circleGeometry args={[2.3, 40]} />

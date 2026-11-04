@@ -1,14 +1,15 @@
 import { useFrame, type ThreeEvent } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { MathUtils, type Group, type Mesh } from 'three'
+import { Color, MathUtils, type BufferGeometry, type Group, type Mesh } from 'three'
 import { haptic } from '../game/haptics'
 import { moodFrom } from '../game/meters'
 import { activeActivity, currentMeters, useDog, type PetZone } from '../game/store'
 import type { Appearance } from './appearance'
-import { buildDogParts } from './dogParts'
+import { buildDogParts, dogLayout, type DogParts } from './dogParts'
+import { earGeometry } from './ears'
 
 const DARK = '#24170f'
-const IRIS = '#4a2c18'
+const NOSE = '#5e3b2a'
 const MOUTH = '#6a2430'
 const TONGUE = '#f2828f'
 /** Distance (world units) of finger movement that counts as one stroke. */
@@ -27,22 +28,36 @@ function useSettled<T>(value: T, ms: number): T {
   return settled
 }
 
-/** Stylized dog built from smooth parts. Behaviours: idle, pet, eat, sleep, sulk, offended, joy. */
+const disposeParts = (p: DogParts) => {
+  for (const g of [p.body, p.head, p.tail, p.front, p.hind]) g.dispose()
+}
+
+/** Low-poly stylized dog. Behaviours: idle, pet, eat, sleep, sulk, offended, joy. */
 export function Dog({ look: liveLook }: { look: Appearance }) {
   const look = useSettled(liveLook, 140)
-  const parts = useMemo(() => buildDogParts(look), [look])
-  useEffect(
-    () => () => {
-      for (const g of [parts.body, parts.head, parts.tail, parts.front, parts.hind])
-        g.dispose()
-    },
-    [parts],
-  )
-  const { H, L } = parts.layout
+  const lay = useMemo(() => dogLayout(look), [look])
+  const { H, L } = lay
   const sl = look.snoutLength
   const dir = look.earType === 'upright' ? 1 : -1
-  const earBase = look.earType === 'upright' ? 0.2 : 0.15
+  const earBase = look.earType === 'upright' ? 0.2 : 0.3
   const earBaseX = look.earType === 'half' ? 0.45 : 0
+  const earGeo = useMemo(() => earGeometry(look.earType), [look.earType])
+  useEffect(() => () => earGeo.dispose(), [earGeo])
+
+  // The mesh is built asynchronously (the simplifier loads a small WASM module).
+  const [parts, setParts] = useState<DogParts | null>(null)
+  const current = useRef<DogParts | null>(null)
+  const token = useRef(0)
+  useEffect(() => {
+    const mine = ++token.current
+    void buildDogParts(look).then((built) => {
+      if (mine !== token.current) return disposeParts(built) // a newer look was requested meanwhile
+      const old = current.current
+      current.current = built
+      setParts(built)
+      if (old) disposeParts(old)
+    })
+  }, [look])
 
   const root = useRef<Group>(null)
   const upper = useRef<Group>(null)
@@ -217,47 +232,43 @@ export function Dog({ look: liveLook }: { look: Appearance }) {
     }
   })
 
+  if (!parts) return null
+
   const body = zoneHandlers((e) => (e.point.y < (H + 0.1) * look.size ? 'belly' : 'back'))
   const headZone = zoneHandlers(() => 'head')
 
   // Facial features, in head-local coordinates (origin = neck pivot).
   const skullZ = 0.3 * L
-  const eyeZ = skullZ + 0.26
+  const eyeZ = skullZ + 0.27
   const tipZ = 0.38 * L + 0.1 + 0.18 * sl // front of the muzzle
-  const mat = <meshStandardMaterial vertexColors roughness={0.85} />
-  const std = (color: string) => <meshStandardMaterial color={color} roughness={0.85} />
+  const mat = <meshStandardMaterial vertexColors flatShading roughness={0.9} />
+  const std = (color: string) => (
+    <meshStandardMaterial color={color} flatShading roughness={0.9} />
+  )
+  const toeColor =
+    look.marking === 'socks'
+      ? '#fffaf0'
+      : `#${new Color(look.furColor).lerp(new Color('#fffaf0'), 0.62).getHexString()}`
 
   const ear = (side: -1 | 1) => (
     <group
       ref={side < 0 ? earL : earR}
       position={[
         side * (look.earType === 'upright' ? 0.2 : 0.31),
-        look.earType === 'upright' ? 0.58 : 0.5,
-        skullZ - 0.03,
+        look.earType === 'upright' ? 0.58 : 0.52,
+        skullZ - 0.02,
       ]}
       rotation={[earBaseX, 0, side * -dir * earBase]}
     >
-      {look.earType === 'upright' ? (
-        <mesh position={[0, 0.17, 0]} scale={[1, 1, 0.55]}>
-          <coneGeometry args={[0.16, 0.42, 16]} />
-          {std(look.secondColor)}
-        </mesh>
-      ) : (
-        <mesh
-          position={[0, look.earType === 'half' ? -0.12 : -0.2, 0]}
-          scale={[0.12, look.earType === 'half' ? 0.2 : 0.29, 0.19]}
-        >
-          <sphereGeometry args={[1, 16, 14]} />
-          {std(look.secondColor)}
-        </mesh>
-      )}
+      <mesh geometry={earGeo}>{std(look.secondColor)}</mesh>
     </group>
   )
 
   const leg = (
     ref: typeof legFR,
-    geo: typeof parts.front,
+    geo: BufferGeometry,
     pivot: readonly [number, number, number],
+    paw: readonly [number, number, number],
     mirror: boolean,
   ) => (
     <group
@@ -266,6 +277,17 @@ export function Dog({ look: liveLook }: { look: Appearance }) {
       scale={[mirror ? -1 : 1, 1, 1]}
     >
       <mesh geometry={geo}>{mat}</mesh>
+      {/* Three little toes on each paw */}
+      {[-0.05, 0, 0.05].map((dx) => (
+        <mesh
+          key={dx}
+          position={[paw[0] + dx, paw[1] - 0.005, paw[2] + 0.135 - Math.abs(dx) * 0.5]}
+          scale={[1, 0.8, 1.35]}
+        >
+          <icosahedronGeometry args={[0.032, 0]} />
+          {std(toeColor)}
+        </mesh>
+      ))}
     </group>
   )
 
@@ -277,7 +299,7 @@ export function Dog({ look: liveLook }: { look: Appearance }) {
         </mesh>
 
         {/* Tail (pivot at its base) */}
-        <group position={parts.layout.tailPivot}>
+        <group position={lay.tailPivot}>
           <group ref={tailWag}>
             <mesh geometry={parts.tail} raycast={noRaycast}>
               {mat}
@@ -286,56 +308,44 @@ export function Dog({ look: liveLook }: { look: Appearance }) {
         </group>
 
         {/* Head (pivot at the neck) */}
-        <group ref={head} position={parts.layout.headPivot} {...headZone}>
+        <group ref={head} position={lay.headPivot} {...headZone}>
           <mesh geometry={parts.head}>{mat}</mesh>
-          {/* Open mouth + tongue */}
+          {/* Mouth (a thin line when closed) + tongue */}
           <mesh
             ref={mouth}
             position={[0, -0.01, tipZ - 0.13]}
             scale={[0.11, 0.005, 0.1 + 0.1 * sl]}
             raycast={noRaycast}
           >
-            <sphereGeometry args={[1, 14, 10]} />
+            <sphereGeometry args={[1, 12, 8]} />
             <meshStandardMaterial color={MOUTH} roughness={0.6} />
           </mesh>
           <mesh
             ref={tongue}
-            position={[0, -0.025, tipZ - 0.04]}
-            scale={[0.07, 0.01, 0.11]}
+            position={[0, -0.025, tipZ - 0.1]}
+            scale={[0.065, 0.01, 0.09]}
             raycast={noRaycast}
           >
-            <sphereGeometry args={[1, 14, 10]} />
+            <sphereGeometry args={[1, 12, 8]} />
             <meshStandardMaterial color={TONGUE} roughness={0.5} />
           </mesh>
+          {/* Big nose */}
           <mesh
-            position={[0, 0.15, tipZ + 0.08]}
-            scale={[1.15, 0.85, 1]}
+            position={[0, 0.15, tipZ + 0.05]}
+            scale={[1.25, 0.85, 1]}
             raycast={noRaycast}
           >
-            <sphereGeometry args={[0.07, 16, 12]} />
-            <meshStandardMaterial
-              color={
-                look.marking === 'mask' || look.marking === 'saddle' ? '#6b4a3a' : DARK
-              }
-              roughness={0.35}
-            />
+            <icosahedronGeometry args={[0.09, 1]} />
+            {std(NOSE)}
           </mesh>
-          {/* Big glossy eyes with iris and two highlights */}
+          {/* Small dark eyes with a tiny highlight */}
           {([-1, 1] as const).map((side) => (
             <group key={side} position={[side * 0.2, 0.36, eyeZ]} raycast={noRaycast}>
               <mesh ref={side < 0 ? eyeL : eyeR} raycast={noRaycast}>
-                <sphereGeometry args={[0.1, 18, 14]} />
-                <meshStandardMaterial color={DARK} roughness={0.2} />
-                <mesh position={[0, 0, 0.012]} scale={[0.82, 0.82, 0.9]}>
-                  <sphereGeometry args={[0.1, 14, 10]} />
-                  <meshStandardMaterial color={IRIS} roughness={0.25} />
-                </mesh>
-                <mesh position={[0.035, 0.04, 0.085]}>
-                  <sphereGeometry args={[0.03, 8, 6]} />
-                  <meshBasicMaterial color="white" />
-                </mesh>
-                <mesh position={[-0.03, -0.035, 0.092]}>
-                  <sphereGeometry args={[0.014, 8, 6]} />
+                <icosahedronGeometry args={[0.06, 1]} />
+                <meshStandardMaterial color={DARK} flatShading roughness={0.25} />
+                <mesh position={[0.02, 0.025, 0.05]}>
+                  <icosahedronGeometry args={[0.014, 0]} />
                   <meshBasicMaterial color="white" />
                 </mesh>
               </mesh>
@@ -347,15 +357,15 @@ export function Dog({ look: liveLook }: { look: Appearance }) {
       </group>
 
       {/* Legs: right ones are built once, left ones are mirrored. Pivot at the top so they can fold. */}
-      {leg(legFR, parts.front, parts.layout.frontLegPivot, false)}
-      {leg(legFL, parts.front, parts.layout.frontLegPivot, true)}
-      {leg(legBR, parts.hind, parts.layout.hindLegPivot, false)}
-      {leg(legBL, parts.hind, parts.layout.hindLegPivot, true)}
+      {leg(legFR, parts.front, lay.frontLegPivot, lay.frontPaw, false)}
+      {leg(legFL, parts.front, lay.frontLegPivot, lay.frontPaw, true)}
+      {leg(legBR, parts.hind, lay.hindLegPivot, lay.hindPaw, false)}
+      {leg(legBL, parts.hind, lay.hindLegPivot, lay.hindPaw, true)}
 
       {/* Food bowl, only visible while eating */}
       <group ref={bowl} position={[0, 0, 1.3 * L + 0.15 * sl]} visible={false}>
         <mesh position={[0, 0.08, 0]}>
-          <cylinderGeometry args={[0.28, 0.2, 0.16, 20]} />
+          <cylinderGeometry args={[0.28, 0.2, 0.16, 12]} />
           {std('#d95f5f')}
         </mesh>
       </group>

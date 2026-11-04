@@ -23,6 +23,7 @@ const MARKINGS: Record<Marking, string> = {
   mask: 'Masker',
   spots: 'Vlekken',
   saddle: 'Zadel',
+  patch: 'Oogvlek',
 }
 
 function Chips<T extends string>(props: {
