@@ -248,7 +248,7 @@ export function Dog({ look: liveLook }: { look: Appearance }) {
   const toeColor =
     look.marking === 'socks'
       ? '#fffaf0'
-      : `#${new Color(look.furColor).lerp(new Color('#fffaf0'), 0.62).getHexString()}`
+      : `#${new Color(look.furColor).lerp(new Color('#f9e4be'), 0.85).getHexString()}`
 
   const ear = (side: -1 | 1) => (
     <group

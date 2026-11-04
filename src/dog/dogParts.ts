@@ -5,6 +5,8 @@ import { meshFromSdf, type Bounds } from './mesher'
 import { ellipsoid, taper, union, type Sdf, type Vec3 } from './sdf'
 
 const WHITE = new Color('#fffaf0')
+/** Warm cream used for the light areas, so they never turn white or grey. */
+const CREAM = new Color('#f9e4be')
 /** Resolution of the smooth source mesh; it is simplified to a few large facets afterwards. */
 const CELL = 0.04
 
@@ -65,7 +67,7 @@ type ColorOf = (
 function faceColor(look: Appearance, lay: DogLayout): ColorOf {
   const { H, w, L } = lay
   const fur = new Color(look.furColor)
-  const light = fur.clone().lerp(WHITE, 0.62)
+  const light = fur.clone().lerp(CREAM, 0.85)
   const second = new Color(look.secondColor)
   const hp = lay.headPivot
   const eyeY = hp[1] + 0.36
@@ -83,7 +85,7 @@ function faceColor(look: Appearance, lay: DogLayout): ColorOf {
     [0.4, 0.45 * H, -0.42 * L, 0.1],
     [-0.4, 0.45 * H, 0.4 * L, 0.1],
   ]
-  const isHead = (y: number, z: number) => y > H + 0.5 && z > 0.8 * L
+  const isHead = (y: number, z: number) => y > H + 0.42 && z > 0.66 * L
   const out = new Color()
 
   return (x, y, z, _nx, ny) => {
