@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useAuth, type SyncStatus } from '../game/sync'
 import { supabase } from '../lib/supabase'
 
@@ -17,6 +17,14 @@ export function AccountButton() {
   const [email, setEmail] = useState('')
   const [message, setMessage] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [cooldown, setCooldown] = useState(0)
+
+  // Short pause after each request so repeated taps cannot burn through the hourly mail limit.
+  useEffect(() => {
+    if (cooldown <= 0) return
+    const id = setTimeout(() => setCooldown((c) => c - 1), 1000)
+    return () => clearTimeout(id)
+  }, [cooldown])
 
   if (!supabase) return null
 
@@ -29,10 +37,15 @@ export function AccountButton() {
       options: { emailRedirectTo: window.location.origin, shouldCreateUser: true },
     })
     setBusy(false)
+    if (!error) setCooldown(60)
     setMessage(
-      error
-        ? 'Versturen mislukt. Probeer het zo nog eens.'
-        : 'Check je mail: tik op de link om in te loggen. 📬',
+      !error
+        ? 'Check je mail: tik op de link om in te loggen. 📬 (Staat hij er niet? Kijk ook in je spam.)'
+        : error.code === 'over_email_send_rate_limit' || error.status === 429
+          ? 'Er zijn te veel inloglinks aangevraagd. Probeer het over een uur nog eens.'
+          : error.code === 'email_address_invalid'
+            ? 'Dit e-mailadres lijkt niet te kloppen. Controleer het op typfouten.'
+            : 'Versturen mislukt. Probeer het zo nog eens.',
     )
   }
 
@@ -88,10 +101,14 @@ export function AccountButton() {
                 />
                 <button
                   type="submit"
-                  disabled={busy}
+                  disabled={busy || cooldown > 0}
                   className="w-full rounded-xl bg-orange-400 py-3 font-semibold text-white disabled:opacity-50"
                 >
-                  {busy ? 'Versturen…' : 'Stuur inloglink'}
+                  {busy
+                    ? 'Versturen…'
+                    : cooldown > 0
+                      ? `Wacht ${cooldown}s`
+                      : 'Stuur inloglink'}
                 </button>
                 {message && <p className="mt-3 text-sm">{message}</p>}
               </form>
