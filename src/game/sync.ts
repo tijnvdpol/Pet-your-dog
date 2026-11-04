@@ -23,6 +23,7 @@ const snapshot = (): LocalDog => {
     lastSeen: s.lastSeen,
     meters: s.meters,
     appearance: s.appearance,
+    character: s.character,
   }
 }
 
@@ -41,7 +42,13 @@ async function createRemote(userId: string) {
   const local = snapshot()
   const { data, error } = await supabase
     .from('dogs')
-    .insert({ owner_id: userId, name: local.name, appearance: local.appearance })
+    .insert({
+      owner_id: userId,
+      name: local.name,
+      appearance: local.appearance,
+      character: local.character,
+      base_model: local.appearance.baseModel,
+    })
     .select('id')
     .single()
   if (error) throw error
@@ -59,7 +66,12 @@ async function pushNow(session: Session) {
   const local = snapshot()
   const dog = await supabase
     .from('dogs')
-    .update({ name: local.name, appearance: local.appearance })
+    .update({
+      name: local.name,
+      appearance: local.appearance,
+      character: local.character,
+      base_model: local.appearance.baseModel,
+    })
     .eq('id', dogId)
   if (dog.error) throw dog.error
   const stats = await supabase
@@ -72,7 +84,7 @@ async function pullNow(session: Session) {
   if (!supabase) return
   const { data, error } = await supabase
     .from('dogs')
-    .select('id,name,appearance,dog_stats(*)')
+    .select('id,name,appearance,character,dog_stats(*)')
     .order('created_at', { ascending: true })
     .limit(1)
   if (error) throw error

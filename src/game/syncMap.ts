@@ -1,4 +1,5 @@
 import { DEFAULT_APPEARANCE, type Appearance } from '../dog/appearance'
+import { DEFAULT_CHARACTER, parseCharacter, type Character } from './character'
 import { freshMeter, type Meter, type MeterId } from './meters'
 
 /** Shape of a `dogs` row joined with its `dog_stats` row. */
@@ -6,6 +7,7 @@ export interface RemoteDog {
   id: string
   name: string
   appearance: Partial<Appearance> | null
+  character?: unknown
   dog_stats: RemoteStats | RemoteStats[] | null
 }
 
@@ -24,6 +26,7 @@ export interface LocalDog {
   lastSeen: number
   meters: Record<MeterId, Meter>
   appearance: Appearance
+  character: Character
 }
 
 const iso = (ms: number) => new Date(ms).toISOString()
@@ -60,5 +63,6 @@ export function fromRemote(r: RemoteDog, now: number): LocalDog {
       happiness: m(s?.happiness, s?.happiness_at, 70),
     },
     appearance: { ...DEFAULT_APPEARANCE, ...(r.appearance ?? {}) },
+    character: r.character ? parseCharacter(r.character) : DEFAULT_CHARACTER,
   }
 }

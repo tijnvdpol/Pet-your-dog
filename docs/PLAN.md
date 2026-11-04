@@ -179,13 +179,15 @@ Vijf fases; elke fase levert een werkende versie op die je kunt laten zien. Begi
 
 **Klaar als:** je kunt inloggen op twee apparaten en ziet dezelfde hond met correct gedaalde meters.
 
+> **Status: afgerond** (getest door de eigenaar op echte apparaten; inloggen met magic link of wachtwoord).
+
 ### Fase 3 – Jouw hond
 
 - [x] Upload foto naar Storage, Edge Function met vision-model, vast JSON-schema (gebouwd en getest op alles behalve de modelaanroep zelf: wacht op `GEMINI_API_KEY`-secret)
 - [x] Kleuren + aftekening + oorvorm toepassen op het model (`src/dog/analysis.ts`, met tests)
-- [ ] Handmatig bijstellen (kleurkiezer, oren, staart)
-- [ ] Middel- en klein-basismodel toevoegen
-- [ ] Korte vragenlijst voor karakter (energie, speelsheid, enz.)
+- [x] Handmatig bijstellen (kleurkiezer, oren, staart, aftekening, snuit, bouw, naam) in het paneel "Maak Max na"
+- [x] Middel- en klein-basismodel toevoegen (drie lichaamssjablonen in `appearance.ts`; zelfde stijl en animaties)
+- [x] Korte vragenlijst voor karakter (energie, speelsheid, knuffelig, eigenwijs, speeltje, aaiplek); energie en knuffelig beïnvloeden de daalsnelheid, de aaiplek geeft bonus
 
 **Klaar als:** 8 van de 10 testfoto's van verschillende honden een herkenbare avatar opleveren zonder handmatige correctie.
 

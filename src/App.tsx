@@ -3,8 +3,9 @@ import { useSync } from './game/sync'
 import { usePresence } from './game/usePresence'
 import { AccountButton } from './ui/AccountButton'
 import { Actions } from './ui/Actions'
+import { CustomizeButton, CustomizePanel } from './ui/CustomizeSheet'
+import { useCustomize } from './ui/customizeStore'
 import { InstallPrompt } from './ui/InstallPrompt'
-import { PhotoButton } from './ui/PhotoSheet'
 import { DevPanel } from './ui/DevPanel'
 import { Meters, MoodBubble } from './ui/Meters'
 
@@ -13,6 +14,7 @@ const Scene = lazy(() => import('./dog/Scene').then((m) => ({ default: m.Scene }
 
 export default function App() {
   usePresence()
+  const customizing = useCustomize((s) => s.open)
   useSync()
   return (
     <div className="mx-auto flex h-dvh max-w-[480px] flex-col bg-gradient-to-b from-[#ffe9c7] to-[#cfeaf5]">
@@ -31,10 +33,11 @@ export default function App() {
           <MoodBubble />
         </div>
         <AccountButton />
-        <PhotoButton />
+        <CustomizeButton />
         {new URLSearchParams(location.search).has('dev') && <DevPanel />}
       </div>
-      <InstallPrompt />
+      <CustomizePanel />
+      {!customizing && <InstallPrompt />}
       <Actions />
     </div>
   )

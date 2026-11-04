@@ -1,4 +1,4 @@
-import type { Appearance, EarType, Marking } from './appearance'
+import { BASE_MODELS, type Appearance, type EarType, type Marking } from './appearance'
 
 /** What the `analyze-dog` edge function stores in `uploads.analysis`. */
 export interface DogAnalysis {
@@ -42,19 +42,20 @@ export function parseAnalysis(v: unknown): DogAnalysis | null {
   }
 }
 
-const SIZE = { small: 0.8, medium: 0.95, large: 1.1 } as const
 const BUILD = { slim: 0.2, average: 0.5, sturdy: 0.8 } as const
-const LEG = { short: 0.5, normal: 0.7, long: 0.8 } as const
+const LEG = { short: 0.75, normal: 1, long: 1.1 } as const
 const SNOUT = { short: 0.2, medium: 0.5, long: 0.85 } as const
 const TAIL = { short: 0.6, medium: 1, long: 1.3 } as const
 
 /** Translates the photo analysis into the parameters of the 3D dog. */
 export function analysisToAppearance(a: DogAnalysis): Appearance {
+  const base = BASE_MODELS[a.size_class] // size_class names match the base models
   return {
-    size: SIZE[a.size_class],
+    baseModel: a.size_class,
+    size: base.size,
     build: BUILD[a.build],
-    bodyLength: a.leg_length === 'short' ? 1.1 : 1,
-    legLength: LEG[a.leg_length],
+    bodyLength: a.leg_length === 'short' ? base.bodyLength * 1.1 : base.bodyLength,
+    legLength: base.legLength * LEG[a.leg_length],
     snoutLength: SNOUT[a.snout_length],
     tailLength: TAIL[a.tail_length],
     earType: a.ear_type,

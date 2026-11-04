@@ -9,6 +9,7 @@ export interface Meter {
 export const METER_IDS: MeterId[] = ['hunger', 'energy', 'happiness']
 
 /** Points lost per hour. Hunger is empty after ~10 h. */
+/** @deprecated use decayRates(character) */
 export const DECAY_PER_HOUR: Record<MeterId, number> = {
   hunger: 10,
   energy: 4,

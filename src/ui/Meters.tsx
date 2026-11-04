@@ -11,7 +11,8 @@ const LABELS: Record<MeterId, { icon: string; label: string; color: string }> = 
 export function Meters() {
   const meters = useDog((s) => s.meters)
   const now = useNow()
-  const values = currentMeters(meters, now)
+  const character = useDog((s) => s.character)
+  const values = currentMeters(meters, now, character)
   return (
     <div className="flex gap-3 px-4 pt-[max(env(safe-area-inset-top),0.75rem)]">
       {METER_IDS.map((id) => (
@@ -41,7 +42,8 @@ export function MoodBubble() {
   const activity = useDog((s) => s.activity)
   const name = useDog((s) => s.name)
   const now = useNow()
-  const values = currentMeters(meters, now)
+  const character = useDog((s) => s.character)
+  const values = currentMeters(meters, now, character)
   const { kind } = activeActivity(activity, now)
   const mood = moodFrom(values)
 
@@ -51,7 +53,12 @@ export function MoodBubble() {
   else if (kind === 'joy') text = `${name} is zó blij dat je er weer bent! 🎉`
   else if (kind === 'eat') text = 'Nom nom nom! 😋'
   else if (kind === 'pet')
-    text = activity.zone === 'head' ? 'Ja, precies daar!' : 'Hmmm, lekker…'
+    text =
+      activity.zone === character.favoriteSpot
+        ? 'Precies zijn lievelingsplekje! 😍'
+        : activity.zone === 'head'
+          ? 'Ja, precies daar!'
+          : 'Hmmm, lekker…'
   else if (mood === 'sulking') {
     text =
       values.hunger < 20
