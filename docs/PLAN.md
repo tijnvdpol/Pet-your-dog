@@ -161,9 +161,11 @@ Vijf fases; elke fase levert een werkende versie op die je kunt laten zien. Begi
 - [x] Aaien: vegen over de hond → kwispelen + trilletje; zones (kop, rug, buik)
 - [x] Meters (honger, energie, blijheid) met daalformule, lokaal opgeslagen in localStorage
 - [x] Knoppen voeren en slapen met bijbehorende animaties
-- [ ] Mobiele layout (staand), getest op een echte telefoon
+- [x] Mobiele layout (staand), getest op een echte telefoon
 
 **Klaar als:** de hond laadt in < 3 s op 4G, draait soepel op je telefoon, reageert op aaien en de meters dalen na een uur echt.
+
+> **Status: afgerond.** Gemeten op gesimuleerde snelle 4G: UI na 0,3 s, hond na 0,65 s (JS 73 kB + 3D-chunk 246 kB gzip). Soepel op een echte telefoon bevestigd. De daalformule is gedekt door unit-tests.
 
 ### Fase 2 – Hond onthoudt
 
