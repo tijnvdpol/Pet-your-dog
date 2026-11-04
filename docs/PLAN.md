@@ -170,7 +170,7 @@ Vijf fases; elke fase levert een werkende versie op die je kunt laten zien. Begi
 ### Fase 2 – Hond onthoudt
 
 - [x] Supabase-project (`Pet your dog`, eu-north-1), Auth met e-mail magic link
-- [ ] Auth met Google (vraagt een Google Cloud OAuth-client)
+- [ ] ~~Auth met Google~~ (optioneel, besloten: voorlopig niet nodig)
 - [x] Tabellen `profiles`, `dogs`, `dog_stats` met RLS (zie `supabase/migrations/`; RLS getest met twee gebruikers)
 - [x] Status opslaan/laden; meters doorrekenen sinds laatste bezoek (test: tweede schone browser ziet dezelfde hond)
 - [x] Mokkig-gedrag en het "beledigd, dan blij"-welkom (na 3 uur weg; test met `?dev` → Welkom)
@@ -181,8 +181,8 @@ Vijf fases; elke fase levert een werkende versie op die je kunt laten zien. Begi
 
 ### Fase 3 – Jouw hond
 
-- [ ] Upload foto naar Storage, Edge Function met vision-model, vast JSON-schema
-- [ ] Kleuren + aftekening + oorvorm toepassen op het model
+- [x] Upload foto naar Storage, Edge Function met vision-model, vast JSON-schema (gebouwd en getest op alles behalve de modelaanroep zelf: wacht op `ANTHROPIC_API_KEY`-secret)
+- [x] Kleuren + aftekening + oorvorm toepassen op het model (`src/dog/analysis.ts`, met tests)
 - [ ] Handmatig bijstellen (kleurkiezer, oren, staart)
 - [ ] Middel- en klein-basismodel toevoegen
 - [ ] Korte vragenlijst voor karakter (energie, speelsheid, enz.)

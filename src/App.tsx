@@ -4,6 +4,7 @@ import { usePresence } from './game/usePresence'
 import { AccountButton } from './ui/AccountButton'
 import { Actions } from './ui/Actions'
 import { InstallPrompt } from './ui/InstallPrompt'
+import { PhotoButton } from './ui/PhotoSheet'
 import { DevPanel } from './ui/DevPanel'
 import { Meters, MoodBubble } from './ui/Meters'
 
@@ -30,6 +31,7 @@ export default function App() {
           <MoodBubble />
         </div>
         <AccountButton />
+        <PhotoButton />
         {new URLSearchParams(location.search).has('dev') && <DevPanel />}
       </div>
       <InstallPrompt />
