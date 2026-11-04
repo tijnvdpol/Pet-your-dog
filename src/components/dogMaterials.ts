@@ -87,7 +87,7 @@ export function createCoatMaterial(): MeshToonMaterial & {
     uCoatSecondary: { value: new Color('#7a5540') },
     uMarkColor: { value: new Color('#f6ead8') },
     uInnerEar: { value: new Color('#8a5a4a') },
-    uMouth: { value: new Color('#3b1416') },
+    uMouth: { value: new Color('#4c1e20') },
     uMarking: { value: 0 },
     uToon: { value: new Vector3(0.56, 0.82, 1.0) },
     uRim: { value: 0.2 },

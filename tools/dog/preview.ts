@@ -149,13 +149,20 @@ async function main() {
   if (!only || only === 'views') {
     const page = await openLab(browser, 480, 600, 2)
     for (const view of VIEWS) {
-      await set(page, { view, animation: 'Idle', frozen: true, time: 0 })
+      await set(page, { view, animation: 'Idle', frozen: true, time: 0, lookAt: false })
       await page.screenshot({ path: join(out, 'views', `${view}.png`) })
     }
     await page.close()
     // as it appears on a phone
     const phone = await openLab(browser, 390, 844, 2)
-    await set(phone, { view: '34', animation: 'Idle', frozen: true, time: 0 })
+    // in the app the dog looks at you
+    await set(phone, {
+      view: '34',
+      animation: 'Idle',
+      frozen: true,
+      time: 0,
+      lookAt: true,
+    })
     await phone.screenshot({ path: join(out, 'phone.png') })
     await phone.close()
     await renderSheet(
@@ -211,6 +218,7 @@ async function main() {
         animation: 'Idle',
         frozen: true,
         time: 0,
+        lookAt: false,
       }
       for (const k of ALL) values[`m_${k}`] = k === m ? 1 : 0
       values.view = FACE.has(m) ? 'face' : m.startsWith('tail') ? 'side' : '34'
@@ -227,6 +235,134 @@ async function main() {
       browser,
       sheet(`Ronde ${round} – morph targets`, [{ label: '', files }], 5, [220, 220]),
       join(out, 'overview_morphs.png'),
+    )
+  }
+
+  if (!only || only === 'variants') {
+    // coat colours, markings and shapes: does the zone system work for other dogs?
+    const VARIANTS: Array<[string, Record<string, unknown>]> = [
+      ['chocolade labrador', {}],
+      ['zwarte labrador', { coatBase: '#2a2421', coatSecondary: '#352d29' }],
+      ['blonde labrador', { coatBase: '#e2b47a', coatSecondary: '#efcd9c' }],
+      [
+        'dalmatiër (vlekken)',
+        {
+          coatBase: '#f3efe7',
+          coatSecondary: '#f3efe7',
+          marking: 'spots',
+          markingColor: '#2a2522',
+          earShape: 'half',
+          bodyType: 0.3,
+        },
+      ],
+      [
+        'beagle (zadel)',
+        {
+          coatBase: '#c27d3e',
+          coatSecondary: '#f6ead8',
+          marking: 'saddle',
+          markingColor: '#2e2621',
+          tailLength: 0.3,
+          snoutLength: 0.65,
+        },
+      ],
+      [
+        'herder (zadel, staande oren)',
+        {
+          coatBase: '#c98f55',
+          coatSecondary: '#d9a86c',
+          marking: 'saddle',
+          markingColor: '#3a2a20',
+          earShape: 'upright',
+          snoutLength: 0.85,
+          bodyType: 0.35,
+          tailLength: 0.75,
+        },
+      ],
+      [
+        'collie (bles, sokjes)',
+        {
+          coatBase: '#221d1b',
+          coatSecondary: '#f6f1ea',
+          marking: 'blaze',
+          markingColor: '#f6f1ea',
+          earShape: 'half',
+          snoutLength: 0.7,
+        },
+      ],
+      [
+        'ooglap',
+        {
+          coatBase: '#f2e6d4',
+          coatSecondary: '#f2e6d4',
+          marking: 'patch',
+          markingColor: '#6b4128',
+          bodyType: 0.75,
+        },
+      ],
+      [
+        'masker',
+        {
+          coatBase: '#d9a066',
+          coatSecondary: '#e8bd8a',
+          marking: 'mask',
+          markingColor: '#3b2a22',
+          snoutLength: 0.3,
+          bodyType: 0.85,
+        },
+      ],
+      [
+        'sokjes',
+        {
+          coatBase: '#8a5a3a',
+          coatSecondary: '#9a6a48',
+          marking: 'socks',
+          markingColor: '#f6ead8',
+          tailLength: 0.8,
+        },
+      ],
+    ]
+    const page = await openLab(browser, 420, 420, 2)
+    mkdirSync(join(out, 'variants'), { recursive: true })
+    const files = []
+    const neutral = {
+      coatBase: '#6a4632',
+      coatSecondary: '#7a5540',
+      marking: 'none',
+      markingColor: '#f6ead8',
+      earShape: 'floppy',
+      snoutLength: 0.5,
+      bodyType: 0.5,
+      tailLength: 0.5,
+    }
+    for (const [i, [label, v]] of VARIANTS.entries()) {
+      // let the shape morphs settle (they ease towards new values)
+      await set(page, {
+        ...neutral,
+        ...v,
+        view: '34',
+        animation: 'Sit',
+        frozen: true,
+        time: 0,
+        lookAt: true,
+      })
+      await page.waitForTimeout(300)
+      await set(page, { time: 0.01 })
+      const path = join(out, 'variants', `${i}.png`)
+      await page.screenshot({ path })
+      files.push({ path, caption: label })
+    }
+    await set(page, neutral)
+    await page.close()
+    await renderSheet(
+      browser,
+      sheet(
+        `Ronde ${round} – kleuren, aftekening en vorm`,
+        [{ label: '', files }],
+        5,
+        [220, 220],
+      ),
+      join(out, 'overview_variants.png'),
     )
   }
 
@@ -249,6 +385,7 @@ async function main() {
           animation: anim,
           frozen: true,
           time: t,
+          lookAt: false,
         })
         const path = join(out, 'anims', `${anim}_${i}.png`)
         await page.screenshot({ path })

@@ -93,7 +93,7 @@ Geen nieuw 3D-model per hond genereren, maar een paar geriggede basismodellen pe
 >
 > - [x] Ronde 1: model, skelet, morphs, animaties, `src/components/Dog.tsx`, `/dev/dog` met leva
 > - [x] Ronde 2: ambient occlusion, silhouet-randlicht, teentjes, levendiger Run/Jump, morph-fixes
-> - [ ] Ronde 3
+> - [x] Ronde 3: hond kijkt je aan, liggende poses, kleur- en aftekeningsvarianten
 > - [ ] Integratie: nieuwe `Dog.tsx` vervangt `src/dog/Dog.tsx` in de app (aaizones, voeren, slapen, mokken)
 >
 > **Model v3 (low-poly, naar referentie):** de gladde delen worden met meshoptimizer vereenvoudigd tot grote vlakken, plat geschaduwd en per vlak in harde kleurblokken geverfd (crème en bruin), met hoekige oren, kleine ogen, een grote neus en pootjes met tenen. ~1.900 driehoeken.

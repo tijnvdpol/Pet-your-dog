@@ -1,4 +1,4 @@
-import { MathUtils, Quaternion, Vector3, type Bone, type Object3D } from 'three'
+import { Euler, MathUtils, Quaternion, Vector3, type Bone, type Object3D } from 'three'
 
 export const DOG_ANIMATIONS = [
   'Idle',
@@ -24,7 +24,7 @@ export type Face = Record<FaceMorph, number>
  * clips never overwrite the shape morphs, and expressions blend smoothly on their own.
  */
 export const FACE_BY_ANIMATION: Record<DogAnimation, Partial<Face>> = {
-  Idle: { mouth_open: 0.12 },
+  Idle: { mouth_open: 0.06 },
   Wag: { mouth_open: 0.55, happy_eyes: 0.35 },
   Sit: { mouth_open: 0.15 },
   Lie: { mouth_open: 0.1 },
@@ -192,3 +192,58 @@ export class Blinker {
     return u < 0 || u > 1 ? 0 : Math.sin(u * Math.PI)
   }
 }
+
+/** Animations in which the dog turns its head towards the viewer. */
+const LOOK_ANIMS = new Set<DogAnimation>(['Idle', 'Wag', 'Sit', 'Lie', 'PetHappy'])
+
+const qa = new Quaternion()
+const qb = new Quaternion()
+const va = new Vector3()
+const vb = new Vector3()
+
+/**
+ * Turns neck and head towards a target (the camera), on top of the clip. Limited angles and
+ * smoothing keep it natural; the clip's own head motion stays visible underneath.
+ */
+export class LookAt {
+  private neck: Bone | null
+  private head: Bone | null
+  private weight = 0
+  private yaw = 0
+  private pitch = 0
+
+  constructor(root: Object3D) {
+    this.neck = (root.getObjectByName('neck') as Bone) ?? null
+    this.head = (root.getObjectByName('head') as Bone) ?? null
+  }
+
+  /** Yaw / pitch (radians) that would point the head's +z at `target`. */
+  private aim(target: Vector3): [number, number] {
+    const head = this.head!
+    head.updateWorldMatrix(true, false)
+    head.getWorldPosition(va)
+    head.getWorldQuaternion(qa)
+    const d = vb.copy(target).sub(va).applyQuaternion(qa.invert())
+    const yaw = Math.atan2(d.x, d.z)
+    const pitch = -Math.atan2(d.y, Math.hypot(d.x, d.z))
+    return [MathUtils.clamp(yaw, -0.75, 0.75), MathUtils.clamp(pitch, -0.4, 0.35)]
+  }
+
+  update(target: Vector3, animation: DogAnimation, dt: number, instant = false) {
+    if (!this.neck || !this.head) return
+    const want = LOOK_ANIMS.has(animation) ? 1 : 0
+    this.weight = instant ? want : MathUtils.damp(this.weight, want, 3, dt)
+    if (this.weight < 0.001) return
+    const [y, p] = this.aim(target)
+    this.yaw = instant ? y : MathUtils.damp(this.yaw, y, 5, dt)
+    this.pitch = instant ? p : MathUtils.damp(this.pitch, p, 5, dt)
+    // a third in the neck, the rest in the head (re-aimed after the neck moved)
+    const w = this.weight * 0.85
+    this.neck.quaternion.multiply(
+      qb.setFromEuler(eul.set(this.pitch * 0.35 * w, this.yaw * 0.35 * w, 0)),
+    )
+    const [y2, p2] = this.aim(target)
+    this.head.quaternion.multiply(qb.setFromEuler(eul.set(p2 * w * 0.9, y2 * w * 0.9, 0)))
+  }
+}
+const eul = new Euler()

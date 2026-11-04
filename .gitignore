@@ -27,3 +27,4 @@ dist-ssr
 previews/round_*/anims/
 previews/round_*/morphs/
 public/models/_debug.glb
+previews/round_*/variants/

@@ -129,6 +129,7 @@ export default function DogLab() {
       ]),
     ),
     secondary: true,
+    lookAt: true,
     stats: false,
   }))
 
@@ -218,6 +219,7 @@ export default function DogLab() {
             tailLength={v.tailLength}
             morphs={morphs}
             secondary={v.secondary}
+            lookAtCamera={v.lookAt}
           />
         </Suspense>
         {v.stats && <Stats />}

@@ -1,5 +1,5 @@
 import { useAnimations, useGLTF } from '@react-three/drei'
-import { useFrame, type ThreeElements } from '@react-three/fiber'
+import { useFrame, useThree, type ThreeElements } from '@react-three/fiber'
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import {
   Color,
@@ -24,6 +24,7 @@ import {
   Blinker,
   FACE_BY_ANIMATION,
   FACE_MORPHS,
+  LookAt,
   SecondaryMotion,
   type DogAnimation,
   type Face,
@@ -60,6 +61,8 @@ export interface DogProps extends Omit<ThreeElements['group'], 'ref'> {
   frozenTime?: number
   /** Model file (dev tooling). */
   url?: string
+  /** Turn the head towards the camera in calm animations. */
+  lookAtCamera?: boolean
 }
 
 /** Maps a 0..1 slider with 0.5 = neutral onto a pair of opposite morph targets. */
@@ -103,6 +106,7 @@ export function Dog({
   secondary = true,
   frozenTime,
   url = DOG_MODEL_URL,
+  lookAtCamera = true,
   ...group
 }: DogProps) {
   const gltf = useGLTF(url)
@@ -159,6 +163,8 @@ export function Dog({
   }, [mats, coatBase, coatSecondary, marking, markingColor, earShape])
 
   const motion = useMemo(() => new SecondaryMotion(scene), [scene])
+  const look = useMemo(() => new LookAt(scene), [scene])
+  const camera = useThree((s) => s.camera)
   const blinker = useMemo(() => new Blinker(), [])
   const faceNow = useRef<Face>({ blink: 0, mouth_open: 0, happy_eyes: 0, sad_brows: 0 })
   const shapeNow = useRef<Record<string, number> | null>(null)
@@ -264,10 +270,12 @@ export function Dog({
         o.quaternion.copy(q)
         o.position.copy(p)
       }
+      if (lookAtCamera) look.update(camera.position, animation, 0, true)
       return
     }
     scene.updateMatrixWorld(true)
     motion.update(dt)
+    if (lookAtCamera) look.update(camera.position, animation, dt)
     applyMorphs.current(dt, false)
   })
 

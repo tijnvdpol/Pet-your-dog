@@ -128,10 +128,11 @@ function lieBase(rig: Rig) {
     hind: (leg: LegName): LegTarget => {
       const s = leg.endsWith('L') ? 1 : -1
       return {
-        foot: [0.22 * s, 0.065, -0.07],
-        pastern: [0.1 * s, -0.05, 1],
-        toe: [0.1 * s, -0.05, 1],
-        pole: [0.5 * s, 0.3, 1],
+        // hind paws tucked forward alongside the belly, knees out: visible from the side
+        foot: [0.27 * s, 0.062, -0.0],
+        pastern: [0.3 * s, -0.04, 1],
+        toe: [0.25 * s, -0.04, 1],
+        pole: [0.9 * s, 0.35, 0.6],
       }
     },
   }
@@ -309,7 +310,8 @@ const CLIPS: Record<string, { T: number; fn: ClipFn }> = {
       rig.rot('spine_2', 0.05)
       // head low and forward, close to the roll axis, so it never digs into the ground
       rig.rot('neck', 1.0, 0, 0)
-      rig.rot('head', -0.55, 0, -0.1 * Math.sin(a))
+      // on its back the head rolls a bit less than the body, looking out sideways
+      rig.rot('head', -0.55, 0.15 * Math.sin(a), -0.28 * Math.sin(a))
       ears(rig, 0, 0.1 * Math.sin(a))
       for (let i = 0; i < 5; i++)
         rig.rot(`tail_${i}`, i === 0 ? -0.1 : 0, 0.25 * wave(t, T, 2, -i * 0.1))
