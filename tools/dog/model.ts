@@ -20,12 +20,12 @@ const chest = ellipsoid([0, 0.4, 0.12], [0.175, 0.19, 0.23])
 const hips = ellipsoid([0, 0.4, -0.14], [0.16, 0.17, 0.19])
 const torso: Sdf = (x, y, z) => smin(chest(x, y, z), hips(x, y, z), 0.14)
 
-const neck = roundCone([0, 0.48, 0.2], [0, 0.6, 0.37], 0.12, 0.115)
-const cranium = ellipsoid([0, 0.64, 0.44], [0.145, 0.13, 0.14])
-const cheek = mirror(ellipsoid([0.085, 0.585, 0.49], [0.06, 0.06, 0.075]))
-const snoutUpper = ellipsoid([0, 0.6, 0.575], [0.07, 0.055, 0.085])
-const jaw = ellipsoid([0, 0.565, 0.55], [0.06, 0.04, 0.08])
-const noseShape = ellipsoid([0, 0.622, 0.652], [0.05, 0.034, 0.036])
+const neck = roundCone([0, 0.5, 0.2], [0, 0.64, 0.37], 0.125, 0.098)
+const cranium = ellipsoid([0, 0.7, 0.43], [0.13, 0.118, 0.13])
+const cheek = mirror(ellipsoid([0.07, 0.655, 0.5], [0.05, 0.05, 0.07]))
+const snoutUpper = ellipsoid([0, 0.66, 0.565], [0.065, 0.055, 0.095])
+const jaw = ellipsoid([0, 0.625, 0.55], [0.05, 0.035, 0.075])
+const noseShape = ellipsoid([0, 0.675, 0.655], [0.054, 0.04, 0.04])
 
 const frontLeg = mirror((x, y, z) => {
   const upper = roundCone([0.1, 0.35, 0.16], [0.1, 0.2, 0.15], 0.078, 0.064)(x, y, z)
@@ -58,12 +58,15 @@ export const tail: Sdf = (x, y, z) => {
 }
 
 /** Soft hanging ear. */
-export const ears = mirror(orientedEllipsoid([0.158, 0.615, 0.41], [0.02, 0.1, 0.07], 0, 0, 0.16))
+export const ears = mirror(orientedEllipsoid([0.165, 0.69, 0.4], [0.016, 0.105, 0.078], 0.1, 0, 0.5))
 
 /** Mouth: a thin slit that cuts through the snout sides, so the jaw can open. */
-export const mouthCavity = ellipsoid([0, 0.583, 0.56], [0.1, 0.0085, 0.09])
-export const tongue = ellipsoid([0, 0.563, 0.55], [0.028, 0.0085, 0.045])
+export const mouthCavity = ellipsoid([0, 0.64, 0.56], [0.1, 0.0085, 0.09])
+export const tongue = ellipsoid([0, 0.62, 0.55], [0.028, 0.0085, 0.045])
 export const noseOnly = noseShape
+
+/** A real mouth slit needs a high-poly mesh; the low-poly look draws the mouth as a dark line instead. */
+export const MOUTH_CUT = process.env.DOG_MOUTH === '1'
 
 export function dogSdf(): Sdf {
   return (x, y, z) => {
@@ -78,8 +81,10 @@ export function dogSdf(): Sdf {
     d = smin(d, head, 0.06)
     d = smin(d, tail(x, y, z), 0.07)
     d = smin(d, ears(x, y, z), 0.025)
-    d = smax(d, -mouthCavity(x, y, z), 0.006)
-    d = smin(d, tongue(x, y, z), 0.008)
+    if (MOUTH_CUT) {
+      d = smax(d, -mouthCavity(x, y, z), 0.006)
+      d = smin(d, tongue(x, y, z), 0.008)
+    }
     return d
   }
 }
@@ -117,16 +122,16 @@ export function skeleton(): BoneDef[] {
     bone('pelvis', 'root', [0, 0.4, -0.2], [0, 0.4, -0.3], [0, 0.41, -0.1], 0.13),
     bone('spine1', 'pelvis', [0, 0.42, -0.02], [0, 0.41, -0.1], [0, 0.43, 0.06], 0.14),
     bone('spine2', 'spine1', [0, 0.45, 0.12], [0, 0.43, 0.06], [0, 0.46, 0.2], 0.14),
-    bone('neck', 'spine2', [0, 0.5, 0.25], [0, 0.48, 0.2], [0, 0.58, 0.37], 0.06),
-    bone('head', 'neck', [0, 0.58, 0.37], [0, 0.6, 0.4], [0, 0.62, 0.56], 0.07),
-    bone('jaw', 'head', [0, 0.58, 0.47], [0, 0.565, 0.5], [0, 0.56, 0.62], 0),
+    bone('neck', 'spine2', [0, 0.5, 0.25], [0, 0.5, 0.2], [0, 0.64, 0.37], 0.06),
+    bone('head', 'neck', [0, 0.64, 0.37], [0, 0.68, 0.4], [0, 0.68, 0.56], 0.07),
+    bone('jaw', 'head', [0, 0.64, 0.47], [0, 0.625, 0.5], [0, 0.62, 0.62], 0),
   ]
   for (const [s, sx] of [
     ['L', 1],
     ['R', -1],
   ] as const) {
-    bones.push(bone(`ear_${s}_0`, 'head', [0.125 * sx, 0.7, 0.41], [0.13 * sx, 0.7, 0.41], [0.16 * sx, 0.62, 0.405], 0, s))
-    bones.push(bone(`ear_${s}_1`, `ear_${s}_0`, [0.16 * sx, 0.62, 0.405], [0.16 * sx, 0.62, 0.405], [0.175 * sx, 0.53, 0.4], 0, s))
+    bones.push(bone(`ear_${s}_0`, 'head', [0.12 * sx, 0.78, 0.4], [0.12 * sx, 0.78, 0.4], [0.165 * sx, 0.69, 0.4], 0, s))
+    bones.push(bone(`ear_${s}_1`, `ear_${s}_0`, [0.165 * sx, 0.69, 0.4], [0.165 * sx, 0.69, 0.4], [0.212 * sx, 0.6, 0.4], 0, s))
   }
   const T = TAIL_PTS.map((t) => t.p)
   const tipEnd: V3 = [0, 0.59, -0.71]
@@ -204,8 +209,8 @@ export function skinWeights(positions: Float32Array, bones: BoneDef[]): Skin {
       sum = 1
     }
     // jaw: lower lip + chin, below the mouth slit, in front of the cheek hinge
-    const slitY = 0.583 - 0.006
-    const jawAmt = smoothstep(slitY + 0.002, slitY - 0.012, p[1]) * smoothstep(0.47, 0.53, p[2]) * smoothstep(0.7, 0.62, p[1] + 0.0)
+    const slitY = 0.64 - 0.006
+    const jawAmt = smoothstep(slitY + 0.002, slitY - 0.012, p[1]) * smoothstep(0.47, 0.53, p[2])
     const headShare = raw[headIdx] / sum
     raw[jawIdx] = jawAmt * headShare * sum
     raw[headIdx] -= raw[jawIdx]
@@ -234,21 +239,27 @@ export interface Zones {
 
 export function zonesAt(p: V3, n: V3, earWeight: number): Zones {
   const [x, y, z] = p
-  const muzzle = smoothstep(0.5, 0.58, z) * smoothstep(0.65, 0.61, y)
-  const chestPatch = 1 - smoothstep(0.55, 1.0, Math.hypot(x / 0.14, (y - 0.33) / 0.17, (z - 0.3) / 0.15))
-  const paws = smoothstep(0.12, 0.075, y)
-  const noseD = noseOnly(x, y, z)
-  const nose = smoothstep(0.012, -0.002, noseD)
+  // cream (coat_secondary): head, neck, chest, belly, lower front legs, paws
+  const headNeck = y > 0.5 && z > 0.22 ? 1 : 0
+  const chestPatch = 1 - smoothstep(0.9, 1.0, Math.hypot(x / 0.17, (y - 0.33) / 0.2, (z - 0.28) / 0.2))
+  const belly = y < 0.3 && Math.abs(x) < 0.085 && z > -0.1 ? 1 : 0
+  const lowerFront = y < 0.22 && z > 0.05 ? 1 : 0
+  const paws = y < 0.1 ? 1 : 0
+  const isEar = earWeight > 0.5 ? 1 : 0
+  // tan patch round the dog's left eye, as in the reference
+  const eyePatch = Math.hypot(x - 0.065, y - 0.72, z - 0.56) < 0.05 ? 1 : 0
+  const cream = Math.max(headNeck, chestPatch, belly, lowerFront, paws) * (1 - isEar) * (1 - eyePatch)
+  const nose = noseOnly(x, y, z) < 0.004 ? 1 : 0
   const mouthD = mouthCavity(x, y, z)
-  const mouth = smoothstep(0.012, 0.003, mouthD)
-  const tongueMask = smoothstep(0.008, 0.0, tongue(x, y, z)) * smoothstep(0.002, -0.004, mouthD - 0.002)
-  const facesHead = smoothstep(-0.5, -0.8, n[0] * Math.sign(x || 1))
-  const innerEar = smoothstep(0.6, 0.9, earWeight) * facesHead
+  const mouthLine = Math.abs(y - 0.64) < 0.008 && z > 0.5 && Math.abs(x) < 0.07 && noseOnly(x, y, z) > 0.01
+  const mouth = MOUTH_CUT ? (mouthD < 0.004 ? 1 : 0) : mouthLine ? 1 : 0
+  const tongueMask = MOUTH_CUT && tongue(x, y, z) < 0.002 && mouthD < 0.006 ? 1 : 0
+  const facesHead = n[0] * Math.sign(x || 1) < -0.5 ? 1 : 0
   return {
-    secondary: Math.max(muzzle, chestPatch * 0.9, paws),
-    nose: Math.min(1, nose),
-    innerEar,
-    tongue: Math.min(1, tongueMask),
-    mouth: Math.min(1, mouth) * (1 - Math.min(1, nose)),
+    secondary: cream,
+    nose,
+    innerEar: isEar * facesHead,
+    tongue: tongueMask,
+    mouth: mouth * (1 - nose),
   }
 }

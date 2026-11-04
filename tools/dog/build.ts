@@ -25,7 +25,7 @@ import { surfaceNets } from './surfaceNets.ts'
 
 const OUT = 'public/models/dog_large.glb'
 const CELL = Number(process.env.DOG_CELL ?? 0.008)
-const TARGET_TRIS = Number(process.env.DOG_TRIS ?? 10500)
+const TARGET_TRIS = Number(process.env.DOG_TRIS ?? 2600)
 const t0 = Date.now()
 const log = (m: string) => console.log(`[${((Date.now() - t0) / 1000).toFixed(1)}s] ${m}`)
 
@@ -86,7 +86,7 @@ async function main() {
   }
 
   /* ---- 2. decimate ---- */
-  const [simp] = MeshoptSimplifier.simplify(indices, raw.positions, 3, TARGET_TRIS * 3, 1, ['ErrorAbsolute'])
+  const [simp] = MeshoptSimplifier.simplify(indices, raw.positions, 3, TARGET_TRIS * 3, 1, ['ErrorAbsolute', 'Regularize'])
   let { positions, indices: idx } = compact(raw.positions, simp)
   log(`decimated: ${positions.length / 3} verts, ${idx.length / 3} tris`)
 
@@ -136,16 +136,10 @@ async function main() {
   const earW = new Float32Array(nVerts)
   const tailW = new Float32Array(nVerts)
   const bodyW = new Float32Array(nVerts)
-  const colors = new Float32Array(nVerts * 4)
-  const uv = new Float32Array(nVerts * 2)
   for (let v = 0; v < nVerts; v++) {
     earW[v] = sumWeight(v, (b) => b.name.startsWith('ear_'))
     tailW[v] = sumWeight(v, (b) => b.name.startsWith('tail_'))
     bodyW[v] = sumWeight(v, (b) => ['pelvis', 'spine1', 'spine2'].includes(b.name))
-    const p: V3 = [positions[v * 3], positions[v * 3 + 1], positions[v * 3 + 2]]
-    const z = zonesAt(p, [normals[v * 3], normals[v * 3 + 1], normals[v * 3 + 2]], earW[v])
-    colors.set([z.secondary, z.nose, z.innerEar, z.tongue], v * 4)
-    uv[v * 2] = z.mouth
   }
   log('skin + zones done')
 
@@ -156,22 +150,22 @@ async function main() {
     ears_up: ([x, y, z], v) => {
       const m = earW[v]
       if (m <= 0.001) return [x, y, z]
-      const ry = 0.7 // root height: mirror the ear about this plane so the tip points up
+      const ry = 0.78 // root height: mirror the ear about this plane so the tip points up
       return [x + Math.sign(x) * 0.015 * m, y + (2 * ry - 2 * y) * m * 0.9, z]
     },
     ears_half: ([x, y, z], v) => {
       const m = earW[v]
       if (m <= 0.001) return [x, y, z]
-      const fold = 0.62 // fold the lower half up/outward
+      const fold = 0.69 // fold the lower half up/outward
       const below = smoothstep(fold + 0.02, fold - 0.06, y)
       return [x + Math.sign(x) * 0.04 * below * m, y + (2 * (fold + 0.03) - 2 * y) * below * m * 0.55, z]
     },
     snout_long: ([x, y, z]) => {
-      const m = smoothstep(0.46, 0.56, z) * smoothstep(0.665, 0.62, y)
+      const m = smoothstep(0.46, 0.56, z) * smoothstep(0.725, 0.68, y)
       return [x, y, z + 0.06 * m]
     },
     snout_short: ([x, y, z]) => {
-      const m = smoothstep(0.46, 0.56, z) * smoothstep(0.665, 0.62, y)
+      const m = smoothstep(0.46, 0.56, z) * smoothstep(0.725, 0.68, y)
       return [x, y, z - 0.045 * m]
     },
     body_slim: ([x, y, z], v) => [x * (1 - 0.14 * bodyW[v]), 0.4 + (y - 0.4) * (1 - 0.08 * bodyW[v]), z],
@@ -195,6 +189,73 @@ async function main() {
     return { name, dp, dn }
   })
   log(`morphs: ${morphs.map((m) => m.name).join(', ')}`)
+
+  /* ---- 6b. unweld: every triangle gets its own vertices, so colour zones are hard-edged blocks ---- */
+  const nTri = idx.length / 3
+  const seq = new Uint32Array(nTri * 3).map((_, i) => i)
+  const expand = <T extends Float32Array | Uint16Array>(src: T, size: number): T => {
+    const out = new (src.constructor as new (n: number) => T)(nTri * 3 * size)
+    for (let t = 0; t < nTri; t++)
+      for (let k = 0; k < 3; k++) {
+        const v = idx[t * 3 + k]
+        for (let c = 0; c < size; c++) out[(t * 3 + k) * size + c] = src[v * size + c]
+      }
+    return out
+  }
+  const positionsU = expand(positions, 3)
+  const normalsU = faceNormals(positionsU, seq)
+  const jointsU = expand(skin.joints, 4)
+  const weightsU = expand(skin.weights, 4)
+  const colors = new Float32Array(nTri * 3 * 4)
+  const uv = new Float32Array(nTri * 3 * 2)
+  const ZN = 5
+  const zoneT = new Float32Array(nTri * ZN)
+  for (let t = 0; t < nTri; t++) {
+    const [a, b, c] = [idx[t * 3], idx[t * 3 + 1], idx[t * 3 + 2]]
+    const cen: V3 = [0, 0, 0]
+    const nrm: V3 = [normalsU[t * 9], normalsU[t * 9 + 1], normalsU[t * 9 + 2]]
+    for (const v of [a, b, c]) for (let k = 0; k < 3; k++) cen[k] += positions[v * 3 + k] / 3
+    const z = zonesAt(cen, nrm, (earW[a] + earW[b] + earW[c]) / 3)
+    zoneT.set([z.secondary, z.nose, z.innerEar, z.tongue, z.mouth], t * ZN)
+  }
+  // majority filter over edge neighbours: straightens ragged colour borders (the thin mouth line is kept)
+  {
+    const edgeTris = new Map<string, number[]>()
+    for (let t = 0; t < nTri; t++)
+      for (let k = 0; k < 3; k++) {
+        const a = idx[t * 3 + k]
+        const b = idx[t * 3 + ((k + 1) % 3)]
+        const key = a < b ? `${a}_${b}` : `${b}_${a}`
+        ;(edgeTris.get(key) ?? edgeTris.set(key, []).get(key)!).push(t)
+      }
+    const nbrs: number[][] = Array.from({ length: nTri }, () => [])
+    for (const ts of edgeTris.values()) if (ts.length === 2) (nbrs[ts[0]].push(ts[1]), nbrs[ts[1]].push(ts[0]))
+    for (let pass = 0; pass < 2; pass++) {
+      const next = new Float32Array(zoneT)
+      for (let t = 0; t < nTri; t++)
+        for (const ch of [0, 2]) {
+          // only the big blocks: cream and inner ear
+          let sum = zoneT[t * ZN + ch]
+          for (const u of nbrs[t]) sum += zoneT[u * ZN + ch]
+          next[t * ZN + ch] = sum / (nbrs[t].length + 1) > 0.5 ? 1 : 0
+        }
+      zoneT.set(next)
+    }
+  }
+  for (let t = 0; t < nTri; t++)
+    for (let k = 0; k < 3; k++) {
+      colors.set([zoneT[t * ZN], zoneT[t * ZN + 1], zoneT[t * ZN + 2], zoneT[t * ZN + 3]], (t * 3 + k) * 4)
+      uv[(t * 3 + k) * 2] = zoneT[t * ZN + 4]
+    }
+  const morphsU = morphs.map((m) => {
+    const pos = new Float32Array(positionsU.length)
+    const dpU = expand(m.dp, 3)
+    for (let i = 0; i < pos.length; i++) pos[i] = positionsU[i] + dpU[i]
+    const fnU = faceNormals(pos, seq)
+    const dnU = new Float32Array(fnU.length)
+    for (let i = 0; i < dnU.length; i++) dnU[i] = fnU[i] - normalsU[i]
+    return { name: m.name, dp: dpU, dn: dnU }
+  })
 
   /* ---- 7. face parts: eyes (+ highlights), lids, brows ---- */
   const head = bones.find((b) => b.name === 'head')!
@@ -236,19 +297,19 @@ async function main() {
   const bodyPrim = doc
     .createPrimitive()
     .setMaterial(coat)
-    .setIndices(acc('SCALAR', idx))
-    .setAttribute('POSITION', acc('VEC3', positions))
-    .setAttribute('NORMAL', acc('VEC3', normals))
+    .setIndices(acc('SCALAR', seq))
+    .setAttribute('POSITION', acc('VEC3', positionsU))
+    .setAttribute('NORMAL', acc('VEC3', normalsU))
     .setAttribute('COLOR_0', acc('VEC4', colors))
     .setAttribute('TEXCOORD_0', acc('VEC2', uv))
-    .setAttribute('JOINTS_0', acc('VEC4', skin.joints))
-    .setAttribute('WEIGHTS_0', acc('VEC4', skin.weights))
-  for (const m of morphs) {
+    .setAttribute('JOINTS_0', acc('VEC4', jointsU))
+    .setAttribute('WEIGHTS_0', acc('VEC4', weightsU))
+  for (const m of morphsU) {
     bodyPrim.addTarget(
       doc.createPrimitiveTarget(m.name).setAttribute('POSITION', acc('VEC3', m.dp)).setAttribute('NORMAL', acc('VEC3', m.dn)),
     )
   }
-  const bodyMesh = doc.createMesh('Body').addPrimitive(bodyPrim).setExtras({ targetNames: morphs.map((m) => m.name) })
+  const bodyMesh = doc.createMesh('Body').addPrimitive(bodyPrim).setExtras({ targetNames: morphsU.map((m) => m.name) })
   scene.addChild(doc.createNode('Body').setMesh(bodyMesh).setSkin(skinDef))
 
   // face parts hang off the head bone
@@ -287,7 +348,7 @@ async function main() {
   await doc.transform(meshopt({ encoder: MeshoptEncoder, level: 'high' }))
   await io.write(OUT, doc)
   const kb = statSync(OUT).size / 1024
-  log(`wrote ${OUT}: ${kb.toFixed(0)} KB, ${idx.length / 3} body tris, ${bones.length} bones, ${morphs.length} shape morphs`)
+  log(`wrote ${OUT}: ${kb.toFixed(0)} KB, ${nTri} body tris, ${bones.length} bones, ${morphs.length} shape morphs`)
   if (kb > 3072) throw new Error('GLB larger than 3 MB')
   void ears
   void boneIndex
@@ -303,7 +364,7 @@ interface FacePart {
   morphs?: Record<string, number[]>
 }
 
-const EYE_R = 0.036
+const EYE_R = 0.027
 const rotX = (p: V3, a: number): V3 => [p[0], p[1] * Math.cos(a) - p[2] * Math.sin(a), p[1] * Math.sin(a) + p[2] * Math.cos(a)]
 const rotZ = (p: V3, a: number): V3 => [p[0] * Math.cos(a) - p[1] * Math.sin(a), p[0] * Math.sin(a) + p[1] * Math.cos(a), p[2]]
 
@@ -351,7 +412,7 @@ function buildFace(headAt: V3): FacePart & {
 
   for (const sx of [1, -1]) {
     // sit the eye on the head surface, pushed slightly in
-    const surf = project([0.078 * sx, 0.66, 0.6])
+    const surf = project([0.066 * sx, 0.72, 0.62])
     const n = grad(surf[0], surf[1], surf[2])
     const c: V3 = [surf[0] - n[0] * 0.012, surf[1] - n[1] * 0.012, surf[2] - n[2] * 0.012]
     const gaze: V3 = [0.12 * sx, 0.02, 1]
@@ -373,8 +434,8 @@ function buildFace(headAt: V3): FacePart & {
 
     // highlights: a bigger one top-outer, a small one bottom-inner
     for (const [off, rad] of [
-      [[-0.45 * sx, 0.5, 0.74], 0.0105],
-      [[0.35 * sx, -0.4, 0.84], 0.005],
+      [[-0.45 * sx, 0.5, 0.74], 0.0085],
+      [[0.35 * sx, -0.4, 0.84], 0.004],
     ] as const) {
       const l = Math.hypot(...off)
       const hc: V3 = [c[0] + (off[0] / l) * EYE_R * 0.97, c[1] + (off[1] / l) * EYE_R * 0.97, c[2] + (off[2] / l) * EYE_R * 0.97]
@@ -425,14 +486,14 @@ function buildFace(headAt: V3): FacePart & {
     lids.push(topPart, botPart)
 
     // brow: a small soft bump above the eye; sad_brows tilts it (inner end up)
-    const bsurf = project([0.082 * sx, 0.72, 0.56])
+    const bsurf = project([0.07 * sx, 0.775, 0.57])
     const bn = grad(bsurf[0], bsurf[1], bsurf[2])
     const bc: V3 = [bsurf[0] - bn[0] * 0.002, bsurf[1] - bn[1] * 0.002, bsurf[2] - bn[2] * 0.002]
     const bs = uvSphere(6, 10)
     const brow: FacePart = { positions: [], indices: [...bs.indices], colors: [] }
     const sad: number[] = []
     for (const d of bs.dirs) {
-      const p0: V3 = [d[0] * 0.03, d[1] * 0.0085, d[2] * 0.012]
+      const p0: V3 = [d[0] * 0.024, d[1] * 0.007, d[2] * 0.01]
       const tiltBase = rotZ(p0, -0.18 * sx)
       const tiltSad = rotZ(p0, 0.42 * sx)
       // neutral: collapsed to a point (invisible); the sad_brows morph grows them into place

@@ -90,8 +90,8 @@ export default function DogPreview() {
   const ctl = useControls({
     animation: { value: (q.get('clip') as ClipName) || 'Idle', options: [...CLIP_NAMES] },
     camera: { value: ((q.get('cam') as CamName) || '3/4') as CamName, options: Object.keys(CAMS) as CamName[] },
-    coatBase: { value: q.get('base') ?? '#5b3a29', label: 'coat_base' },
-    coatSecondary: { value: q.get('second') ?? '#a0744f', label: 'coat_secondary' },
+    coatBase: { value: q.get('base') ?? '#b97a4a', label: 'coat_base' },
+    coatSecondary: { value: q.get('second') ?? '#f1e3c6', label: 'coat_secondary' },
     earShape: { value: (q.get('ears') as 'hanging') || 'hanging', options: ['hanging', 'half', 'upright'] },
     snoutLength: { value: Number(q.get('snout') ?? 0), min: -1, max: 1, step: 0.05 },
     bodyType: { value: (q.get('body') as 'normal') || 'normal', options: ['slim', 'normal', 'chunky'] },

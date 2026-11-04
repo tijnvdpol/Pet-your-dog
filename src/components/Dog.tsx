@@ -46,14 +46,14 @@ export interface DogProps {
 }
 
 const CROSSFADE = 0.25
-const INNER_EAR = '#c98f8a'
-const NOSE = '#2b1b15'
+const INNER_EAR = '#d99a86'
+const NOSE = '#4a2e29'
 const TONGUE = '#ee7f8e'
 const MOUTH = '#4a1f27'
 
 /** 3-band gradient: soft toon shading. */
 function toonGradient() {
-  const tex = new DataTexture(new Uint8Array([150, 205, 255]), 3, 1, RedFormat)
+  const tex = new DataTexture(new Uint8Array([140, 175, 210, 238, 255]), 5, 1, RedFormat)
   tex.minFilter = tex.magFilter = NearestFilter
   tex.needsUpdate = true
   return tex
@@ -62,8 +62,8 @@ function toonGradient() {
 /** MeshToonMaterial that colours vertex zones (COLOR_0 = secondary/nose/innerEar/tongue, uv.x = mouth) and adds a soft rim. */
 function makeCoatMaterial() {
   const uniforms = {
-    uBase: { value: new Color('#5b3a29') },
-    uSecondary: { value: new Color('#a0744f') },
+    uBase: { value: new Color('#b97a4a') },
+    uSecondary: { value: new Color('#f1e3c6') },
     uNose: { value: new Color(NOSE) },
     uInner: { value: new Color(INNER_EAR) },
     uTongue: { value: new Color(TONGUE) },
@@ -119,8 +119,8 @@ class Follow {
 
 export function Dog(props: DogProps) {
   const {
-    coatBase = '#5b3a29',
-    coatSecondary = '#a0744f',
+    coatBase = '#b97a4a',
+    coatSecondary = '#f1e3c6',
     earShape = 'hanging',
     snoutLength = 0,
     bodyType = 'normal',
