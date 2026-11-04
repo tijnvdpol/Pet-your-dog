@@ -6,7 +6,7 @@
  *
  * Uses the machine's preinstalled Playwright (resolved via NODE_PATH / global install).
  */
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { execSync } from 'node:child_process'
 import { dirname, join, resolve } from 'node:path'
@@ -270,7 +270,6 @@ async function main() {
       )
   }
   await browser.close()
-  writeFileSync(join(out, '.done'), new Date().toISOString())
   console.log(`previews -> ${out}`)
 }
 
