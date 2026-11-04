@@ -109,6 +109,23 @@ const morph = (mesh: Mesh | undefined, name: string, value: number) => {
 }
 
 /** Damped spring that lags behind its anchor (ears, tail). */
+/**
+ * The mixer only writes a bone back when its clip value changed, so an additive tweak on top of a
+ * constant track would pile up frame after frame. Remember the clip's value and re-apply on top of it.
+ */
+class Overlay {
+  base = new Quaternion()
+  written = new Quaternion()
+  /** Call once per frame before tweaking `bone.quaternion`. */
+  begin(bone: Object3D) {
+    if (!bone.quaternion.equals(this.written)) this.base.copy(bone.quaternion)
+    bone.quaternion.copy(this.base)
+  }
+  end(bone: Object3D) {
+    this.written.copy(bone.quaternion)
+  }
+}
+
 class Follow {
   x = [0, 0]
   v = [0, 0]
@@ -141,6 +158,8 @@ export function Dog(props: DogProps) {
   const face = useRef({ happy: 0, sad: 0, mouth: 0, closed: 0, blinkT: 2, blinkPhase: -1 })
   const follows = useRef<Record<string, Follow>>({})
   const current = useRef<ClipName | null>(null)
+  const overlays = useRef<Record<string, Overlay>>({})
+  const overlay = (name: string) => (overlays.current[name] ??= new Overlay())
 
   // one-time setup: materials, bones, meshes
   useEffect(() => {
@@ -199,6 +218,8 @@ export function Dog(props: DogProps) {
 
   useFrame((_, dtRaw) => {
     const dt = Math.min(dtRaw, 1 / 20) || 1 / 60
+    // A pinned (paused) action is not re-evaluated by the mixer, so re-apply it to keep the additive jaw from accumulating.
+    if (time !== undefined) mixer.update(0)
     const P = parts.current
     const f = face.current
     const target = FACE[animation]
@@ -241,7 +262,12 @@ export function Dog(props: DogProps) {
     // jaw: clip value + extra mouth opening
     const B = bones.current
     const open = Math.min(1, f.mouth * 0.6 + mouthOpen)
-    if (B.jaw) B.jaw.rotateX(open * 0.5)
+    if (B.jaw) {
+      const o = overlay('jaw')
+      o.begin(B.jaw)
+      B.jaw.rotateX(open * 0.5)
+      o.end(B.jaw)
+    }
 
     // secondary motion: ears and tail trail their anchor
     if (secondary && time === undefined) {
@@ -278,10 +304,13 @@ export function Dog(props: DogProps) {
           const b = B[bn]
           if (!b) return
           const w = (i + 1) / ch.bones.length
+          const o = overlay(bn)
+          o.begin(b)
           if (ch.tail) tmp.e.set(st.x[0] * w, st.x[1] * w, 0)
           else tmp.e.set(st.x[0] * w, 0, (ch.key === 'earL' ? 1 : -1) * st.x[1] * w)
           tmp.q.setFromEuler(tmp.e)
           b.quaternion.multiply(tmp.q)
+          o.end(b)
         })
       }
     }

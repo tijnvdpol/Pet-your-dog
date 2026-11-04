@@ -7,11 +7,11 @@ import { Dog } from '../components/Dog'
 import { CLIP_NAMES, type ClipName } from '../components/dogRig'
 
 const CAMS = {
-  front: { pos: [0, 0.6, 2.9], look: [0, 0.38, 0], fov: 32 },
-  '3/4': { pos: [2.1, 0.95, 2.3], look: [0, 0.36, -0.02], fov: 32 },
-  side: { pos: [3.3, 0.5, 0], look: [0, 0.38, -0.02], fov: 32 },
-  top: { pos: [0.01, 3.4, 0.15], look: [0, 0.3, -0.05], fov: 32 },
-  face: { pos: [0.8, 0.8, 1.55], look: [0, 0.6, 0.47], fov: 26 },
+  front: { pos: [0, 0.7, 3.0], look: [0, 0.46, 0], fov: 32 },
+  '3/4': { pos: [2.1, 1.05, 2.3], look: [0, 0.44, -0.02], fov: 32 },
+  side: { pos: [3.3, 0.55, 0], look: [0, 0.46, 0.0], fov: 32 },
+  top: { pos: [0.01, 3.4, 0.15], look: [0, 0.3, 0.0], fov: 32 },
+  face: { pos: [0.85, 0.95, 1.6], look: [0, 0.74, 0.5], fov: 26 },
 } as const
 type CamName = keyof typeof CAMS
 

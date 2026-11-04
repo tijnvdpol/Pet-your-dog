@@ -207,7 +207,8 @@ Het low-poly model v3 is vervangen in de planning door een gladde, geriggede hon
 - [x] Elf animatieclips (procedureel gebakken tot echte `AnimationClip`s; loops getest op naadloosheid)
 - [x] Ronde 1 (`previews/round_1/`)
 - [x] Ronde 2: low-poly look naar referentiefoto (`previews/round_2/RONDE_2.md`)
-- [ ] Ronde 3 (poten met tenen, snuit, grondcontact, mond)
+- [x] Ronde 3: anatomie herbouwd (proporties, hakknik, nek, snuit) en kaak/oor-bug opgelost (`previews/round_3/RONDE_3.md`)
+- [ ] Ronde 4 indien nodig (labrador-stevigheid, grondcontact, tenen); anders Plan B (CC0-model) voorstellen
 - [ ] Meten: 60 fps op een middenklasse telefoon en laden < 3 s op 4G
 - [ ] Nieuwe hond in de app aansluiten (vervangt `src/dog/Dog.tsx`) na akkoord
 

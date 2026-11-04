@@ -39,16 +39,16 @@ export interface FaceState {
 }
 export const FACE: Record<ClipName, FaceState> = {
   Idle: { happy: 0, sad: 0, mouth: 0, closed: 0, blink: true },
-  Wag: { happy: 0.6, sad: 0, mouth: 0.35, closed: 0, blink: true },
+  Wag: { happy: 0.6, sad: 0, mouth: 0.1, closed: 0, blink: true },
   Sit: { happy: 0, sad: 0, mouth: 0, closed: 0, blink: true },
   Lie: { happy: 0, sad: 0, mouth: 0, closed: 0, blink: true },
   Sleep: { happy: 0, sad: 0, mouth: 0, closed: 1, blink: false },
   Eat: { happy: 0.2, sad: 0, mouth: 0, closed: 0, blink: true },
-  Run: { happy: 0.5, sad: 0, mouth: 0.55, closed: 0, blink: true },
-  Roll: { happy: 1, sad: 0, mouth: 0.4, closed: 0, blink: false },
-  Jump: { happy: 0.8, sad: 0, mouth: 0.5, closed: 0, blink: false },
+  Run: { happy: 0.5, sad: 0, mouth: 0.15, closed: 0, blink: true },
+  Roll: { happy: 1, sad: 0, mouth: 0.1, closed: 0, blink: false },
+  Jump: { happy: 0.8, sad: 0, mouth: 0.15, closed: 0, blink: false },
   Sulk: { happy: 0, sad: 1, mouth: 0, closed: 0, blink: true },
-  PetHappy: { happy: 1, sad: 0, mouth: 0.25, closed: 0, blink: false },
+  PetHappy: { happy: 1, sad: 0, mouth: 0.1, closed: 0, blink: false },
 }
 
 type Ctx = { u: number } // u = loop phase in [0,1)
@@ -78,7 +78,7 @@ function base(p: PoseOut, { u }: Ctx, breath = 1) {
 
 function sitPose(p: PoseOut, k = 1) {
   // hind legs fold under: pelvis drops and tips up (the whole front follows), thigh forward, shin back, foot flat
-  move(p, 'pelvis', 0, -0.17 * k, -0.02 * k)
+  move(p, 'pelvis', 0, -0.27 * k, -0.04 * k)
   add(p, 'pelvis', -0.62 * k)
   add(p, 'spine1', 0.12 * k)
   add(p, 'spine2', 0.15 * k)
@@ -185,7 +185,7 @@ export const POSES: Record<ClipName, { duration: number; fn: (p: PoseOut, c: Ctx
       add(p, 'pelvis', -0.08 * s(u, 1, 0.25))
       move(p, 'pelvis', 0, 0.05 * Math.abs(s(u, 1, 0.1)), 0)
       add(p, 'neck', -0.1 + 0.08 * s(u, 1, 0.25))
-      add(p, 'jaw', 0.15)
+      add(p, 'jaw', 0.04)
       for (let i = 0; i < 5; i++) add(p, `tail_${i}`, -0.25 + 0.15 * s(u, 1, -i * 0.05), 0.1 * s(u, 2, -i * 0.08))
       for (const sd of sides) add(p, `ear_${sd}_0`, 0.25 + 0.2 * s(u, 1, 0.3))
     },
@@ -195,7 +195,7 @@ export const POSES: Record<ClipName, { duration: number; fn: (p: PoseOut, c: Ctx
     fn: (p, c) => {
       const a = TAU * c.u
       // rotate the whole dog around its belly axis (z): root pivots about (0, .3, 0)
-      const cy = 0.3
+      const cy = 0.4
       add(p, 'root', 0, 0, a)
       move(p, 'root', cy * Math.sin(a), cy - cy * Math.cos(a) + 0.08 * Math.abs(Math.sin(a)), 0)
       for (const sd of sides) {
@@ -226,7 +226,7 @@ export const POSES: Record<ClipName, { duration: number; fn: (p: PoseOut, c: Ctx
         add(p, `hind_${sd}_shin`, 0.5 * air + 0.9 * crouch)
         add(p, `hind_${sd}_meta`, -0.3 * air - 0.4 * crouch)
       }
-      add(p, 'jaw', 0.3 * air)
+      add(p, 'jaw', 0.08 * air)
       for (let i = 0; i < 5; i++) add(p, `tail_${i}`, 0, 0.3 * s(u, 3, -i * 0.06))
       for (const sd of sides) add(p, `ear_${sd}_0`, 0.35 * air - 0.1 * crouch)
     },

@@ -25,7 +25,7 @@ import { surfaceNets } from './surfaceNets.ts'
 
 const OUT = 'public/models/dog_large.glb'
 const CELL = Number(process.env.DOG_CELL ?? 0.008)
-const TARGET_TRIS = Number(process.env.DOG_TRIS ?? 2600)
+const TARGET_TRIS = Number(process.env.DOG_TRIS ?? 3200)
 const t0 = Date.now()
 const log = (m: string) => console.log(`[${((Date.now() - t0) / 1000).toFixed(1)}s] ${m}`)
 
@@ -150,28 +150,28 @@ async function main() {
     ears_up: ([x, y, z], v) => {
       const m = earW[v]
       if (m <= 0.001) return [x, y, z]
-      const ry = 0.78 // root height: mirror the ear about this plane so the tip points up
+      const ry = 0.84 // root height: mirror the ear about this plane so the tip points up
       return [x + Math.sign(x) * 0.015 * m, y + (2 * ry - 2 * y) * m * 0.9, z]
     },
     ears_half: ([x, y, z], v) => {
       const m = earW[v]
       if (m <= 0.001) return [x, y, z]
-      const fold = 0.69 // fold the lower half up/outward
+      const fold = 0.76 // fold the lower half up/outward
       const below = smoothstep(fold + 0.02, fold - 0.06, y)
       return [x + Math.sign(x) * 0.04 * below * m, y + (2 * (fold + 0.03) - 2 * y) * below * m * 0.55, z]
     },
     snout_long: ([x, y, z]) => {
-      const m = smoothstep(0.46, 0.56, z) * smoothstep(0.725, 0.68, y)
+      const m = smoothstep(0.46, 0.56, z) * smoothstep(0.79, 0.74, y)
       return [x, y, z + 0.06 * m]
     },
     snout_short: ([x, y, z]) => {
-      const m = smoothstep(0.46, 0.56, z) * smoothstep(0.725, 0.68, y)
+      const m = smoothstep(0.46, 0.56, z) * smoothstep(0.79, 0.74, y)
       return [x, y, z - 0.045 * m]
     },
-    body_slim: ([x, y, z], v) => [x * (1 - 0.14 * bodyW[v]), 0.4 + (y - 0.4) * (1 - 0.08 * bodyW[v]), z],
-    body_chunky: ([x, y, z], v) => [x * (1 + 0.15 * bodyW[v]), 0.4 + (y - 0.4) * (1 + 0.1 * bodyW[v]), z],
-    tail_long: ([x, y, z], v) => [x, 0.43 + (y - 0.43) * (1 + 0.3 * tailW[v]), -0.33 + (z + 0.33) * (1 + 0.35 * tailW[v])],
-    tail_short: ([x, y, z], v) => [x, 0.43 + (y - 0.43) * (1 - 0.25 * tailW[v]), -0.33 + (z + 0.33) * (1 - 0.3 * tailW[v])],
+    body_slim: ([x, y, z], v) => [x * (1 - 0.14 * bodyW[v]), 0.46 + (y - 0.46) * (1 - 0.08 * bodyW[v]), z],
+    body_chunky: ([x, y, z], v) => [x * (1 + 0.15 * bodyW[v]), 0.46 + (y - 0.46) * (1 + 0.1 * bodyW[v]), z],
+    tail_long: ([x, y, z], v) => [x, 0.5 + (y - 0.5) * (1 + 0.3 * tailW[v]), -0.3 + (z + 0.3) * (1 + 0.35 * tailW[v])],
+    tail_short: ([x, y, z], v) => [x, 0.5 + (y - 0.5) * (1 - 0.25 * tailW[v]), -0.3 + (z + 0.3) * (1 - 0.3 * tailW[v])],
   }
   const morphs = Object.entries(warps).map(([name, fn]) => {
     const pos = new Float32Array(nVerts * 3)
@@ -412,7 +412,7 @@ function buildFace(headAt: V3): FacePart & {
 
   for (const sx of [1, -1]) {
     // sit the eye on the head surface, pushed slightly in
-    const surf = project([0.066 * sx, 0.72, 0.62])
+    const surf = project([0.075 * sx, 0.8, 0.52])
     const n = grad(surf[0], surf[1], surf[2])
     const c: V3 = [surf[0] - n[0] * 0.012, surf[1] - n[1] * 0.012, surf[2] - n[2] * 0.012]
     const gaze: V3 = [0.12 * sx, 0.02, 1]
@@ -486,7 +486,7 @@ function buildFace(headAt: V3): FacePart & {
     lids.push(topPart, botPart)
 
     // brow: a small soft bump above the eye; sad_brows tilts it (inner end up)
-    const bsurf = project([0.07 * sx, 0.775, 0.57])
+    const bsurf = project([0.07 * sx, 0.86, 0.5])
     const bn = grad(bsurf[0], bsurf[1], bsurf[2])
     const bc: V3 = [bsurf[0] - bn[0] * 0.002, bsurf[1] - bn[1] * 0.002, bsurf[2] - bn[2] * 0.002]
     const bs = uvSphere(6, 10)
