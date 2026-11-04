@@ -37,6 +37,11 @@ export interface Leaf {
   bone: string
   /** Filled in by `indexLeaves`. */
   id: number
+  /**
+   * For morph targets: carry points with this other leaf's frame instead of our own
+   * (e.g. a cutting plane that must move with the shape it cuts).
+   */
+  follow?: string
 }
 
 export type SdfNode =
@@ -66,8 +71,16 @@ export const roundCone = (
   ra: number,
   rb = ra,
 ) => leaf(name, bone, { type: 'roundCone', a, b, ra, rb })
-export const plane = (name: string, bone: string, o: V3, n: V3) =>
-  leaf(name, bone, { type: 'plane', o, n: norm(n) })
+export const plane = (
+  name: string,
+  bone: string,
+  o: V3,
+  n: V3,
+  follow?: string,
+): Leaf => ({
+  ...leaf(name, bone, { type: 'plane', o, n: norm(n) }),
+  follow,
+})
 export const union = (k: number, ...children: SdfNode[]): SdfNode => ({
   kind: 'union',
   k,

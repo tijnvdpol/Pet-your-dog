@@ -243,51 +243,56 @@ const CLIPS: Record<string, { T: number; fn: ClipFn }> = {
   },
 
   Run: {
-    T: 0.5,
+    T: 0.48,
     fn: (rig, t, T) => {
       const ph = t / T
-      rig.hips = add(rig.hips, [0, 0.03 + 0.035 * wave(t, T, 2, 0.1), 0])
-      rig.rot('spine_0', 0.12 * wave(t, T, 1))
-      rig.rot('spine_1', -0.08 * wave(t, T, 1, 0.1))
-      rig.rot('spine_2', -0.1 * wave(t, T, 1, 0.15))
-      rig.rot('neck', -0.12 + 0.1 * wave(t, T, 1, 0.35))
-      rig.rot('head', 0.08 * wave(t, T, 1, 0.45))
-      rig.rot('jaw', 0.18)
-      ears(rig, 0.35, 0.1)
+      // one suspension per stride: the body is highest just after the hind legs push off
+      const lift = wave(t, T, 1, -0.15)
+      rig.hips = add(rig.hips, [0, 0.045 + 0.045 * lift, 0])
+      rig.rot('spine_0', 0.16 * wave(t, T, 1, 0.05))
+      // spine flexes when the legs gather under the body and extends in the stretch
+      const flex = wave(t, T, 1, 0.3)
+      rig.rot('spine_1', -0.12 * flex)
+      rig.rot('spine_2', -0.14 * wave(t, T, 1, 0.15) + 0.06 * flex)
+      // the head stays steady while the body rocks underneath it
+      rig.rot('neck', -0.16 - 0.12 * wave(t, T, 1, 0.1))
+      rig.rot('head', 0.1 + 0.05 * wave(t, T, 1, 0.4))
+      rig.rot('jaw', 0.2)
+      ears(rig, 0.45, 0.12)
       for (let i = 0; i < 5; i++)
-        rig.rot(`tail_${i}`, i === 0 ? 0.1 : 0, 0.18 * wave(t, T, 2, -i * 0.1))
+        rig.rot(`tail_${i}`, i === 0 ? 0.25 : 0.04, 0.22 * wave(t, T, 2, -i * 0.12))
       const phases: Record<LegName, number> = {
         front_L: 0,
-        front_R: 0.1,
-        hind_L: 0.5,
-        hind_R: 0.6,
+        front_R: 0.12,
+        hind_L: 0.52,
+        hind_R: 0.64,
       }
       const targets: Partial<Record<LegName, LegTarget>> = {}
       for (const leg of LEGS) {
         const r = rig.legRest(leg)
         const front = leg.startsWith('front')
         const s = (ph + phases[leg]) % 1
-        const duty = 0.42
-        const A = front ? 0.14 : 0.12
+        const duty = 0.36
+        const A = front ? 0.19 : 0.16
         let z: number
         let y: number
-        let flex: number
+        let curl: number
         if (s < duty) {
           z = mix(A, -A, s / duty)
           y = 0
-          flex = 0
+          curl = 0
         } else {
           const u = (s - duty) / (1 - duty)
           z = mix(-A, A, ease(0, 1, u))
-          y = (front ? 0.14 : 0.11) * Math.sin(Math.PI * u)
-          flex = Math.sin(Math.PI * u) * (front ? 1.4 : 0.8)
+          y = (front ? 0.17 : 0.13) * Math.sin(Math.PI * u)
+          curl = Math.sin(Math.PI * Math.min(1, u * 1.2))
         }
         // fold the pastern / paw backwards during the swing
-        const fq = qAxisAngle([1, 0, 0], front ? -flex : flex * 0.6)
+        const fq = qAxisAngle([1, 0, 0], front ? -1.5 * curl : 0.9 * curl)
         targets[leg] = {
           foot: add(r.foot, [0, y, z]),
           pastern: qRotate(fq, r.pastern),
-          toe: qRotate(qAxisAngle([1, 0, 0], front ? -flex * 1.2 : flex), r.toe),
+          toe: qRotate(qAxisAngle([1, 0, 0], front ? -1.8 * curl : 1.1 * curl), r.toe),
         }
       }
       solveLegs(rig, targets)
@@ -336,33 +341,38 @@ const CLIPS: Record<string, { T: number; fn: ClipFn }> = {
     T: 1.3,
     fn: (rig, t, T) => {
       const p = t / T
-      // vertical profile: crouch -> launch -> air -> land -> recover
+      // crouch -> push off (stretch) -> tuck at the top -> reach for the ground -> land -> settle
       let y = 0
-      if (p < 0.24) y = -0.1 * ease(0, 0.24, p)
-      else if (p < 0.34) y = mix(-0.1, 0.06, ease(0.24, 0.34, p))
+      if (p < 0.22) y = -0.1 * ease(0, 0.22, p)
+      else if (p < 0.34) y = mix(-0.1, 0.1, ease(0.22, 0.34, p))
       else if (p < 0.78) {
         const u = (p - 0.34) / 0.44
-        y = 0.06 + 0.36 * 4 * u * (1 - u)
-      } else if (p < 0.88) y = mix(0.06, -0.08, ease(0.78, 0.88, p))
-      else y = mix(-0.08, 0, ease(0.88, 1, p))
-      const airW = clamp(ease(0.3, 0.42, p) - ease(0.72, 0.8, p), 0, 1)
+        y = 0.1 + 0.34 * 4 * u * (1 - u)
+      } else if (p < 0.87) y = mix(0.1, -0.09, ease(0.78, 0.87, p))
+      else y = mix(-0.09, 0, ease(0.87, 1, p))
       rig.hips = add(rig.hips, [0, y, 0])
+      // nose up on the push-off, level at the top, nose down towards the landing
       const pitch =
-        p < 0.34
-          ? 0.12 * ease(0, 0.24, p)
-          : p < 0.78
-            ? mix(-0.18, 0.15, (p - 0.34) / 0.44)
-            : mix(0.15, 0, ease(0.78, 1, p))
+        p < 0.22
+          ? -0.08 * ease(0, 0.22, p)
+          : p < 0.4
+            ? mix(-0.08, 0.3, ease(0.22, 0.36, p))
+            : p < 0.82
+              ? mix(0.3, -0.16, ease(0.4, 0.78, p))
+              : mix(-0.16, 0, ease(0.82, 1, p))
       rig.rot('spine_0', -pitch * 0.6)
       rig.rot('spine_2', -pitch * 0.4)
-      rig.rot('neck', -0.15 * airW - 0.05)
-      rig.rot('head', 0.05)
-      rig.rot('jaw', 0.15 * airW)
-      ears(rig, 0.25 * airW, 0.1 * airW)
+      const air = clamp(ease(0.3, 0.38, p) - ease(0.74, 0.8, p), 0, 1)
+      const tuck = clamp(ease(0.36, 0.5, p) - ease(0.6, 0.72, p), 0, 1)
+      const reach = clamp(ease(0.6, 0.72, p) - ease(0.8, 0.86, p), 0, 1)
+      rig.rot('neck', -0.12 * air + 0.2 * reach - 0.05)
+      rig.rot('head', 0.05 - 0.1 * tuck)
+      rig.rot('jaw', 0.18 * air)
+      ears(rig, 0.2 * air, 0.1 * air)
       for (let i = 0; i < 5; i++)
         rig.rot(
           `tail_${i}`,
-          i === 0 ? 0.25 + 0.3 * airW : 0.05,
+          i === 0 ? 0.25 + 0.35 * air : 0.06,
           0.15 * wave(t, T, 2, -i * 0.1),
         )
       const targets: Partial<Record<LegName, LegTarget>> = {}
@@ -371,15 +381,18 @@ const CLIPS: Record<string, { T: number; fn: ClipFn }> = {
         const s = leg.endsWith('L') ? 1 : -1
         const ground = planted(rig, leg)
         const parent = front ? 'spine_2' : 'spine_0'
-        const tuckP = rig.carry(
-          parent,
-          front ? [0.15 * s, 0.2, 0.3] : [0.16 * s, 0.17, -0.2],
-        )
-        const tuckDir = rig.carryDir(parent, norm(front ? [0, -0.4, 1] : [0, -0.2, -1]))
+        // body-space poses in the air: stretched (push-off), tucked (top), reaching (landing)
+        const stretch: V3 = front ? [0.15 * s, 0.17, 0.36] : [0.16 * s, 0.1, -0.44]
+        const tucked: V3 = front ? [0.15 * s, 0.22, 0.28] : [0.16 * s, 0.2, -0.18]
+        const reaching: V3 = front ? [0.15 * s, 0.05, 0.3] : [0.16 * s, 0.08, -0.26]
+        const bodyP = lerp(lerp(stretch, tucked, tuck), reaching, reach)
+        const airP = rig.carry(parent, bodyP)
+        const curl = rig.carryDir(parent, norm(front ? [0, -0.3, 1] : [0, -0.1, -1]))
+        const down = rig.carryDir(parent, ground.pastern!)
         targets[leg] = {
-          foot: lerp(ground.foot, tuckP, airW),
-          pastern: norm(lerp(ground.pastern!, tuckDir, airW)),
-          toe: airW > 0.5 ? 'follow' : ground.toe,
+          foot: lerp(ground.foot, airP, air),
+          pastern: norm(lerp(ground.pastern!, lerp(curl, down, reach), air)),
+          toe: air > 0.5 ? 'follow' : ground.toe,
         }
       }
       solveLegs(rig, targets)
@@ -504,3 +517,6 @@ export function poseAt(p: DogParams, bones: BoneDef[], clip: string, t: number):
 }
 
 export const CLIP_NAMES = Object.keys(CLIPS)
+export const CLIP_DURATIONS: Record<string, number> = Object.fromEntries(
+  Object.entries(CLIPS).map(([k, c]) => [k, c.T]),
+)

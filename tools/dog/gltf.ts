@@ -15,6 +15,8 @@ export interface BodyData {
   zones: Float32Array
   /** RGBA marking fields 0..1 */
   marks: Float32Array
+  /** x = baked ambient occlusion (1 = open), yzw reserved */
+  shade: Float32Array
   joints: Uint8Array
   weights: Float32Array
   morphs: Array<{ name: string; dp: Float32Array; dn: Float32Array }>
@@ -104,6 +106,7 @@ export async function writeGlb(
     .setAttribute('NORMAL', acc('VEC3', body.normals))
     .setAttribute('COLOR_0', acc('VEC4', toU8(body.zones)).setNormalized(true))
     .setAttribute('_MARKINGS', acc('VEC4', toU8(body.marks)).setNormalized(true))
+    .setAttribute('_SHADE', acc('VEC4', toU8(body.shade)).setNormalized(true))
     .setAttribute('JOINTS_0', acc('VEC4', body.joints))
     .setAttribute('WEIGHTS_0', acc('VEC4', body.weights))
   for (const m of body.morphs)

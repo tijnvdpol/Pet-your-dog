@@ -82,11 +82,15 @@ export function morphTarget(
   variant: { root: SdfNode; leaves: Leaf[] },
 ): { dp: Float32Array; dn: Float32Array; maxMove: number } {
   if (variant.leaves.length !== baseLeaves.length) throw new Error('variant tree differs')
-  const maps = baseLeaves.map((l, i) => {
+  const leafMaps = baseLeaves.map((l, i) => {
     const a = leafFrame(l.shape)
     const b = leafFrame(variant.leaves[i].shape)
     return m4Mul(b, m4InvertAffine(a))
   })
+  const byName = new Map(baseLeaves.map((l) => [l.name, l.id]))
+  const maps = baseLeaves.map((l, i) =>
+    l.follow ? leafMaps[byName.get(l.follow)!] : leafMaps[i],
+  )
   const f = compile(variant.root)
   const nv = base.positions.length / 3
   const pos = new Float32Array(base.positions.length)

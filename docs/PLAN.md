@@ -92,7 +92,7 @@ Geen nieuw 3D-model per hond genereren, maar een paar geriggede basismodellen pe
 > **Model v4 (in ontwikkeling, SDF in code → GLB):** gestileerde chocoladelabrador-pup, gebouwd door `tools/dog/build.ts` (SDF + smooth union → surface nets → glad, ~12,5k driehoeken lijf + losse ogen/neus/tong), met 32-botten skelet, automatische skin weights, morph targets (oren, snuit, bouw, staart, gezicht) en 11 keyframe-clips. Resultaat: `public/models/dog_large.glb` (~380 kB), te bekijken op `/dev/dog`. Rondes en screenshots: `previews/round_N/`.
 >
 > - [x] Ronde 1: model, skelet, morphs, animaties, `src/components/Dog.tsx`, `/dev/dog` met leva
-> - [ ] Ronde 2
+> - [x] Ronde 2: ambient occlusion, silhouet-randlicht, teentjes, levendiger Run/Jump, morph-fixes
 > - [ ] Ronde 3
 > - [ ] Integratie: nieuwe `Dog.tsx` vervangt `src/dog/Dog.tsx` in de app (aaizones, voeren, slapen, mokken)
 >

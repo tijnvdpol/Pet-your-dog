@@ -28,6 +28,7 @@ import {
   intersect,
   plane,
   roundCone,
+  subtract,
   union,
   unionS,
 } from './sdf'
@@ -181,7 +182,7 @@ export const BASE: DogParams = {
   legSpread: 0,
   eye: { c: [0.135, 1.01, 0.592], r: 0.075, yaw: 0.3, pitch: -0.05 },
   nose: { c: [0, 0.885, 0.665], pitch: 0.2 },
-  tongue: { c: [0, 0.753, 0.565], r: [0.055, 0.011, 0.07] },
+  tongue: { c: [0, 0.75, 0.588], r: [0.054, 0.012, 0.055] },
 }
 
 const clone = (p: DogParams): DogParams => structuredClone(p)
@@ -207,15 +208,16 @@ export const VARIANTS: Record<string, (p: DogParams) => DogParams> = {
     const p = clone(p0)
     p.ears.mode = 'half'
     p.ears.root = [0.205, 1.17, 0.365]
+    p.ears.hinge = 0.115
     p.ears.rootLobe = [
-      [0, -0.08, 0],
-      [0.027, 0.105, 0.095],
+      [0, -0.065, 0],
+      [0.027, 0.085, 0.092],
     ]
     p.ears.tipLobe = [
-      [0, -0.05, 0.0],
-      [0.023, 0.085, 0.075],
+      [0, -0.06, 0.0],
+      [0.024, 0.095, 0.082],
     ]
-    p.ears.fold = -2.3
+    p.ears.fold = -2.65
     return p
   },
   snout_long: (p0) => {
@@ -231,14 +233,15 @@ export const VARIANTS: Record<string, (p: DogParams) => DogParams> = {
   },
   snout_short: (p0) => {
     const p = clone(p0)
-    // the skull front limits how far back the muzzle can go before the nose gets buried
+    // the skull front limits how far back the muzzle can go before the nose gets buried;
+    // the jaw follows the upper lip exactly so the mouth stays closed
     p.head.muzzle = [
       add(p.head.muzzle[0], [0, 0.004, -0.02]),
       add(p.head.muzzle[1], [0.008, 0.004, -0.03]),
     ]
     p.head.jaw = [
-      add(p.head.jaw[0], [0, 0, -0.025]),
-      add(p.head.jaw[1], [0.005, 0, -0.03]),
+      add(p.head.jaw[0], [0, 0, -0.02]),
+      add(p.head.jaw[1], [0.005, 0, -0.027]),
     ]
     p.nose.c = add(p.nose.c, [0, 0.004, -0.04])
     p.tongue.c = add(p.tongue.c, [0, 0, -0.035])
@@ -372,16 +375,22 @@ function leg(
   const R = radii.map((r) => r * ls)
   const pawC = side(add(paw[0], [spread, 0, 0]), s)
   const pawR: V3 = [paw[1][0] * (0.5 + ls / 2), paw[1][1], paw[1][2] * (0.6 + ls * 0.4)]
+  // three chubby toes on the front of the paw, with shallow grooves between them
+  const toeSpread = 0.048 * (0.5 + ls / 2)
   const toes = [-1, 0, 1].map((dx, i) =>
     ellipsoid(
       `${name}_toe_${i}`,
       boneOf(3),
-      add(pawC, [
-        dx * 0.043 * (0.5 + ls / 2),
-        -0.006,
-        pawR[2] * 0.72 - Math.abs(dx) * 0.022,
-      ]),
-      [0.03, 0.034, 0.034],
+      add(pawC, [dx * toeSpread, 0.004, pawR[2] * 0.62 + (dx === 0 ? 0.008 : 0)]),
+      [0.036, 0.042, 0.045],
+    ),
+  )
+  const grooves = [-1, 1].map((dx, i) =>
+    ellipsoid(
+      `${name}_groove_${i}`,
+      boneOf(3),
+      add(pawC, [(dx * toeSpread) / 2, 0.038, pawR[2] * 0.72]),
+      [0.008, 0.03, 0.05],
     ),
   )
   return unionS(
@@ -390,7 +399,11 @@ function leg(
     roundCone(`${name}_upper`, boneOf(0), J[0], J[1], R[0], R[1]),
     roundCone(`${name}_lower`, boneOf(1), J[1], J[2], R[1], R[2]),
     roundCone(`${name}_pastern`, boneOf(2), J[2], J[3], R[2], R[3]),
-    union(0.022, ellipsoid(`${name}_paw`, boneOf(3), pawC, pawR), ...toes),
+    subtract(
+      0.01,
+      union(0.02, ellipsoid(`${name}_paw`, boneOf(3), pawC, pawR), ...toes),
+      union(0, ...grooves),
+    ),
   )
 }
 
@@ -497,7 +510,7 @@ export function buildTree(p: DogParams): { root: SdfNode; leaves: Leaf[] } {
       intersect(
         0.004,
         ellipsoid('muzzle', 'head', h.muzzle[0], h.muzzle[1]),
-        plane('muzzle_cut', 'head', [0, h.mouthY, 0], [0, -1, 0]),
+        plane('muzzle_cut', 'head', [0, h.mouthY, 0], [0, -1, 0], 'muzzle'),
       ),
     ),
     ellipsoid('brow_L', 'head', h.brow[0], h.brow[1], browQ(1)),
@@ -508,7 +521,7 @@ export function buildTree(p: DogParams): { root: SdfNode; leaves: Leaf[] } {
   const jaw = intersect(
     0.004,
     ellipsoid('jaw', 'jaw', jawRotate(p, h.jaw[0]), h.jaw[1], jq),
-    plane('jaw_cut', 'jaw', jawTop, qRotate(jq, [0, 1, 0])),
+    plane('jaw_cut', 'jaw', jawTop, qRotate(jq, [0, 1, 0]), 'jaw'),
   )
   const head = union(0.025, union(0.02, headCore, jaw), ear(p, 1), ear(p, -1))
   const root = union(0.15, neckBody, head)
@@ -653,7 +666,7 @@ export function zoneFields(
   const yBot = h.mouthY - h.gap - 0.004
   const slab = Math.min(v[1] - yBot, yTop - v[1])
   const mouth =
-    field(-slab, 0.006) *
+    field(-slab, 0.01) *
     clamp((0.14 - Math.abs(v[0])) / 0.02, 0, 1) *
     clamp((v[2] - 0.4) / 0.03, 0, 1) *
     clamp(headOwn * 2, 0, 1)

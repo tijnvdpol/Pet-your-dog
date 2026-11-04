@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CLIP_NAMES, poseAt } from './anim'
+import { CLIP_DURATIONS, CLIP_NAMES, poseAt } from './anim'
 import { BASE, skeleton, toeTip } from './dogModel'
 import { dist } from './math'
 import { LEGS, Rig } from './rig'
@@ -38,19 +38,7 @@ describe('leg IK', () => {
 describe('clips', () => {
   it.each(CLIP_NAMES)('%s loops seamlessly', (name) => {
     const a = poseAt(BASE, bones, name, 0)
-    const T = {
-      Idle: 4,
-      Wag: 1.2,
-      Sit: 3,
-      Lie: 4,
-      Sleep: 5,
-      Eat: 1.2,
-      Run: 0.5,
-      Roll: 2,
-      Jump: 1.3,
-      Sulk: 4,
-      PetHappy: 1,
-    }[name]!
+    const T = CLIP_DURATIONS[name]
     const b = poseAt(BASE, bones, name, T)
     for (let i = 0; i < bones.length; i++) {
       const d = Math.abs(

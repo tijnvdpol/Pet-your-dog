@@ -65,7 +65,7 @@ const ANIM_VIEW: Record<string, string> = {
   Lie: '34',
   Sleep: '34',
   Run: 'side',
-  Jump: 'side',
+  Jump: 'sideWide',
 }
 const FRAMES = 5
 

@@ -16,6 +16,7 @@ const VIEWS = {
   '34': { pos: [2.1, 1.3, 2.8], target: [0, 0.6, 0.05] },
   front: { pos: [0, 0.85, 3.5], target: [0, 0.62, 0] },
   side: { pos: [3.7, 0.8, 0.0], target: [0, 0.6, 0.0] },
+  sideWide: { pos: [4.6, 1.0, 0.0], target: [0, 0.78, 0.0] },
   back: { pos: [-1.3, 1.2, -3.5], target: [0, 0.64, -0.1] },
   top: { pos: [0.001, 4.6, 0.12], target: [0, 0.45, 0.0] },
   face: { pos: [0.55, 1.05, 1.75], target: [0, 0.91, 0.45] },
@@ -84,7 +85,9 @@ declare global {
 
 /** Publishes clip durations for the screenshot script once the model has loaded. */
 function ClipInfo() {
-  const { animations } = useGLTF(DOG_MODEL_URL)
+  const { animations } = useGLTF(
+    new URLSearchParams(location.search).get('model') ?? DOG_MODEL_URL,
+  )
   useEffect(() => {
     window.__dogClips = Object.fromEntries(animations.map((a) => [a.name, a.duration]))
   }, [animations])
@@ -186,9 +189,22 @@ export default function DogLab() {
           <planeGeometry args={[1, 1]} />
           <meshBasicMaterial map={blob} transparent depthWrite={false} />
         </mesh>
+        {v.animation === 'Eat' && (
+          <group position={[0, 0, 0.56]}>
+            <mesh position={[0, 0.05, 0]}>
+              <cylinderGeometry args={[0.16, 0.12, 0.1, 32, 1, true]} />
+              <meshToonMaterial color="#d95f5f" side={2} />
+            </mesh>
+            <mesh position={[0, 0.07, 0]} rotation-x={-Math.PI / 2}>
+              <circleGeometry args={[0.15, 32]} />
+              <meshToonMaterial color="#8a5a35" />
+            </mesh>
+          </group>
+        )}
         <Suspense fallback={null}>
           <ClipInfo />
           <Dog
+            url={params.get('model') ?? undefined}
             animation={v.animation}
             fade={v.fade}
             frozenTime={v.frozen ? v.time : undefined}

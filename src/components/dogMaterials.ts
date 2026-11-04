@@ -28,7 +28,7 @@ const TOON_RAMP = /* glsl */ `
 uniform vec3 uToon;
 vec3 getGradientIrradiance( vec3 normal, vec3 lightDirection ) {
   float d = dot( normal, lightDirection ) * 0.5 + 0.5;
-  float w = fwidth( d ) * 0.75 + 0.015;
+  float w = fwidth( d ) * 0.75 + 0.006;
   float t1 = smoothstep( 0.4 - w, 0.4 + w, d );
   float t2 = smoothstep( 0.66 - w, 0.66 + w, d );
   return vec3( mix( mix( uToon.x, uToon.y, t1 ), uToon.z, t2 ) );
@@ -39,6 +39,15 @@ const RIM = /* glsl */ `
   {
     float facing = clamp( dot( normal, normalize( vViewPosition ) ), 0.0, 1.0 );
     float rim = smoothstep( 0.55, 1.0, 1.0 - facing );
+    outgoingLight += uRimColor * rim * uRim;
+  }
+`
+
+/** Rim light on the silhouette only: the baked occlusion keeps it out of creases. */
+const RIM_COAT = /* glsl */ `
+  {
+    float facing = clamp( dot( normal, normalize( vViewPosition ) ), 0.0, 1.0 );
+    float rim = smoothstep( 0.7, 1.0, 1.0 - facing ) * smoothstep( 0.75, 0.97, vAO );
     outgoingLight += uRimColor * rim * uRim;
   }
 `
@@ -59,8 +68,10 @@ export interface CoatUniforms {
   uToon: { value: Vector3 }
   uRim: { value: number }
   uRimColor: { value: Color }
-  /** Leg-height level (0..1 of 0.5 m) below which the paws take the secondary colour. */
+  /** Leg-height level (0..1 of 0.4 m) below which the paws take the secondary colour. */
   uPawLevel: { value: number }
+  /** Strength of the baked ambient occlusion (0..1). */
+  uAO: { value: number }
 }
 
 /**
@@ -78,10 +89,11 @@ export function createCoatMaterial(): MeshToonMaterial & {
     uInnerEar: { value: new Color('#8a5a4a') },
     uMouth: { value: new Color('#3b1416') },
     uMarking: { value: 0 },
-    uToon: { value: new Vector3(0.62, 0.84, 1.0) },
-    uRim: { value: 0.28 },
+    uToon: { value: new Vector3(0.56, 0.82, 1.0) },
+    uRim: { value: 0.2 },
     uRimColor: { value: new Color('#ffe2c2') },
     uPawLevel: { value: 0.12 },
+    uAO: { value: 0.8 },
   }
   const m = toonBase(u as unknown as Record<string, IUniform>) as MeshToonMaterial & {
     userData: { uniforms: CoatUniforms }
@@ -94,6 +106,8 @@ export function createCoatMaterial(): MeshToonMaterial & {
         /* glsl */ `#include <common>
         attribute vec4 color;
         attribute vec4 _markings;
+        attribute vec4 _shade;
+        varying float vAO;
         varying vec4 vZones;
         varying vec4 vMarks;
         varying vec3 vRest;`,
@@ -103,6 +117,7 @@ export function createCoatMaterial(): MeshToonMaterial & {
         /* glsl */ `#include <begin_vertex>
         vZones = color;
         vMarks = _markings;
+        vAO = _shade.x;
         vRest = position;`,
       )
     shader.fragmentShader = shader.fragmentShader
@@ -119,6 +134,8 @@ export function createCoatMaterial(): MeshToonMaterial & {
         uniform float uRim;
         uniform vec3 uRimColor;
         uniform float uPawLevel;
+        uniform float uAO;
+        varying float vAO;
         varying vec4 vZones;
         varying vec4 vMarks;
         varying vec3 vRest;
@@ -144,7 +161,7 @@ export function createCoatMaterial(): MeshToonMaterial & {
       .replace(
         'vec4 diffuseColor = vec4( diffuse, opacity );',
         /* glsl */ `
-        float bib = smoothstep( 0.38, 0.62, vZones.x ); // soft edge: a bib, not a patch
+        float bib = smoothstep( 0.35, 0.75, vZones.x ) * 0.85; // soft edge: a bib, not a patch
         float muzzle = zoneAbove( vZones.y, 0.5 );
         float paws = 1.0 - zoneAbove( vZones.z, uPawLevel );
         vec3 coat = mix( uCoatBase, uCoatSecondary, max( max( bib, muzzle ), paws ) );
@@ -162,11 +179,12 @@ export function createCoatMaterial(): MeshToonMaterial & {
         coat = mix( coat, uMarkColor, mark );
         coat = mix( coat, uInnerEar, zoneAbove( vZones.w, 0.5 ) );
         coat = mix( coat, uMouth, zoneAbove( vMarks.x, 0.5 ) );
+        coat *= mix( 1.0, vAO, uAO );
         vec4 diffuseColor = vec4( coat, opacity );`,
       )
-      .replace('#include <opaque_fragment>', `${RIM}\n#include <opaque_fragment>`)
+      .replace('#include <opaque_fragment>', `${RIM_COAT}\n#include <opaque_fragment>`)
   }
-  m.customProgramCacheKey = () => 'dog-coat-v1'
+  m.customProgramCacheKey = () => 'dog-coat-v2'
   return m
 }
 

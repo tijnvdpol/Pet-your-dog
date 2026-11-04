@@ -58,6 +58,8 @@ export interface DogProps extends Omit<ThreeElements['group'], 'ref'> {
   secondary?: boolean
   /** Deterministic preview: simulate the clip up to this time (s) and freeze. */
   frozenTime?: number
+  /** Model file (dev tooling). */
+  url?: string
 }
 
 /** Maps a 0..1 slider with 0.5 = neutral onto a pair of opposite morph targets. */
@@ -100,9 +102,10 @@ export function Dog({
   morphs,
   secondary = true,
   frozenTime,
+  url = DOG_MODEL_URL,
   ...group
 }: DogProps) {
-  const gltf = useGLTF(DOG_MODEL_URL)
+  const gltf = useGLTF(url)
   const scene = useMemo(() => cloneSkinned(gltf.scene), [gltf.scene])
   const { actions, mixer } = useAnimations(gltf.animations, scene)
 
@@ -113,6 +116,10 @@ export function Dog({
       nose: createNoseMaterial('#3d2219'),
       tongue: createToonMaterial('#e8737d'),
     }
+    // the tongue lies on the mouth floor: win near-coplanar depth ties against it
+    m.tongue.polygonOffset = true
+    m.tongue.polygonOffsetFactor = -1
+    m.tongue.polygonOffsetUnits = -4
     // keep the glTF material names so re-running the assignment below is idempotent
     for (const [name, mat] of Object.entries(m)) mat.name = name
     return m
