@@ -156,7 +156,7 @@ Vijf fases; elke fase levert een werkende versie op die je kunt laten zien. Begi
 ### Fase 1 – Hond leeft (lokaal, geen backend)
 
 - [x] Project opzetten: Vite + React + TS, Tailwind, R3F + drei, Zustand, oxlint/Prettier
-- [ ] Gratis geriggede gestileerde hond (CC0) zoeken of maken, licentie vastleggen in `ASSETS.md`
+- [x] Hond zelf maken als parametrisch model in code (geen extern model nodig, geen licentie); zie `src/dog/Dog.tsx` en `appearance.ts`
 - [x] Camera en licht instellen, idle-animatie afspelen (met placeholder-hond; GLB laden volgt zodra er een model is)
 - [x] Aaien: vegen over de hond → kwispelen + trilletje; zones (kop, rug, buik)
 - [x] Meters (honger, energie, blijheid) met daalformule, lokaal opgeslagen in localStorage

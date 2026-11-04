@@ -1,5 +1,6 @@
 import { Scene } from './dog/Scene'
 import { Actions } from './ui/Actions'
+import { DevPanel } from './ui/DevPanel'
 import { Meters, MoodBubble } from './ui/Meters'
 
 export default function App() {
@@ -11,6 +12,7 @@ export default function App() {
         <div className="pointer-events-none absolute inset-x-0 top-3">
           <MoodBubble />
         </div>
+        {new URLSearchParams(location.search).has('dev') && <DevPanel />}
       </div>
       <Actions />
     </div>

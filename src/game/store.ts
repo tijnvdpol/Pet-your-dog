@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { DEFAULT_APPEARANCE, type Appearance } from '../dog/appearance'
 import { persist } from 'zustand/middleware'
 import {
   applyDelta,
@@ -27,7 +28,9 @@ const PET_MS = 900
 interface DogState {
   name: string
   meters: Record<MeterId, Meter>
+  appearance: Appearance
   activity: Activity
+  setAppearance: (a: Partial<Appearance>) => void
   feed: () => void
   sleep: () => void
   pet: (zone: PetZone) => void
@@ -55,7 +58,9 @@ export const useDog = create<DogState>()(
       return {
         name: 'Max',
         meters: initialMeters(Date.now()),
+        appearance: DEFAULT_APPEARANCE,
         activity: IDLE,
+        setAppearance: (a) => set({ appearance: { ...get().appearance, ...a } }),
         feed: () => {
           const now = Date.now()
           if (activeActivity(get().activity, now).kind === 'sleep') return
@@ -85,7 +90,7 @@ export const useDog = create<DogState>()(
     },
     {
       name: 'virtuele-hond-v1',
-      partialize: (s) => ({ name: s.name, meters: s.meters }),
+      partialize: (s) => ({ name: s.name, meters: s.meters, appearance: s.appearance }),
     },
   ),
 )
