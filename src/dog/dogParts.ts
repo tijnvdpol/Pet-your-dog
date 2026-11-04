@@ -20,6 +20,9 @@ export interface DogLayout {
   tailPivot: Vec3
   frontLegPivot: Vec3
   hindLegPivot: Vec3
+  /** Head measurements in head-local coordinates (origin = neck pivot): skull centre z and muzzle tip z. */
+  skullZ: number
+  tipZ: number
   /** Paw centres, relative to the leg pivot (for toes). */
   frontPaw: Vec3
   hindPaw: Vec3
@@ -31,11 +34,17 @@ export function dogLayout(look: Appearance): DogLayout {
   const L = look.bodyLength
   const frontLegPivot: Vec3 = [0.19 * w, H, 0.4 * L]
   const hindLegPivot: Vec3 = [0.22 * w, H, -0.4 * L]
+  const headZ = 0.62 * L
+  const skullWorldZ = 0.82 * L
+  // The muzzle sticks out well in front of the skull: 0.2 + 0.26 * snoutLength.
+  const tipWorldZ = skullWorldZ + 0.34 + 0.2 + 0.26 * look.snoutLength
   return {
     H,
     w,
     L,
-    headPivot: [0, H + 0.45, 0.62 * L],
+    headPivot: [0, H + 0.45, headZ],
+    skullZ: skullWorldZ - headZ,
+    tipZ: tipWorldZ - headZ,
     tailPivot: [0, H + 0.4, -0.78 * L],
     frontLegPivot,
     hindLegPivot,
@@ -70,8 +79,8 @@ function faceColor(look: Appearance, lay: DogLayout): ColorOf {
   const light = fur.clone().lerp(CREAM, 0.85)
   const second = new Color(look.secondColor)
   const hp = lay.headPivot
-  const eyeY = hp[1] + 0.36
-  const eyeZ = hp[2] + 0.3 * L + 0.26
+  const eyeY = hp[1] + 0.37
+  const eyeZ = hp[2] + lay.skullZ + 0.27
   const spots: [number, number, number, number][] = [
     [0.36 * w, H + 0.32, 0.12 * L, 0.17],
     [0.33 * w, H + 0.12, -0.3 * L, 0.15],
@@ -95,7 +104,7 @@ function faceColor(look: Appearance, lay: DogLayout): ColorOf {
     // Light underside, chest front, throat, muzzle and the lower legs.
     if (y < H - 0.02 && y > 0.3 * H && ax < 0.34 * w) out.copy(light)
     if (ax < 0.2 && z > 0.5 * L && y < H + 0.5) out.copy(light)
-    if (z > 1.0 * L + 0.02 && y > H + 0.3) out.copy(light)
+    if (z > hp[2] + lay.skullZ + 0.3 && y > H + 0.3) out.copy(light)
     if (y < 0.3 * H) out.copy(look.marking === 'socks' ? WHITE : light)
     // Tail in the second colour.
     if (z < -0.7 * L && y > H + 0.35) out.copy(second)
@@ -107,11 +116,11 @@ function faceColor(look: Appearance, lay: DogLayout): ColorOf {
         if (Math.hypot(x - 0.2, y - eyeY, z - eyeZ) < 0.2) out.copy(second)
         break
       case 'blaze':
-        if (ax < 0.075 && y > H + 0.8 && z > 0.9 * L) out.copy(WHITE)
+        if (ax < 0.075 && y > H + 0.85 && z > 0.8 * L) out.copy(WHITE)
         break
       case 'mask':
       case 'saddle':
-        if (z > 1.0 * L + 0.08 && y < H + 0.78) out.copy(second)
+        if (z > hp[2] + lay.skullZ + 0.3 && y < H + 0.85) out.copy(second)
         if (
           look.marking === 'saddle' &&
           ny > 0.1 &&
@@ -191,7 +200,6 @@ const shift = (g: BufferGeometry, p: Vec3) => g.translate(-p[0], -p[1], -p[2])
 export async function buildDogParts(look: Appearance): Promise<DogParts> {
   const lay = dogLayout(look)
   const { H, w, L } = lay
-  const sl = look.snoutLength
   const tl = look.tailLength
   const colorOf = faceColor(look, lay)
   /** `keep` = fraction of the triangles to keep. */
@@ -225,12 +233,18 @@ export async function buildDogParts(look: Appearance): Promise<DogParts> {
       ),
     ]),
   )
-  // Head: neck, big round skull and a short soft muzzle (neck slightly wider so it overlaps the body).
+  // Head: neck, rounded skull, a clearly protruding muzzle and a lower jaw.
+  const skullWorldZ = lay.skullZ + lay.headPivot[2]
+  const tipWorldZ = lay.tipZ + lay.headPivot[2]
   const headSdf = union(
     0.1,
-    taper(lay.headPivot, [0, H + 0.6, 0.82 * L], 0.275, 0.23),
-    ellipsoid([0, H + 0.7, 0.92 * L], [0.38, 0.35, 0.36]),
-    taper([0, H + 0.62, 1.0 * L], [0, H + 0.58, 1.0 * L + 0.1 + 0.18 * sl], 0.17, 0.125),
+    taper(lay.headPivot, [0, H + 0.6, 0.78 * L], 0.275, 0.23),
+    ellipsoid([0, H + 0.72, skullWorldZ], [0.36, 0.34, 0.34]),
+    taper([0, H + 0.66, skullWorldZ + 0.1], [0, H + 0.6, tipWorldZ - 0.13], 0.17, 0.13),
+    ellipsoid(
+      [0, H + 0.54, (skullWorldZ + tipWorldZ) / 2 + 0.02],
+      [0.1, 0.08, (tipWorldZ - skullWorldZ) / 2],
+    ),
   )
   // Tail: thick at the base, curling up, with a soft tip.
   const t0: Vec3 = lay.tailPivot

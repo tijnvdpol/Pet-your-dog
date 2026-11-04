@@ -238,9 +238,9 @@ export function Dog({ look: liveLook }: { look: Appearance }) {
   const headZone = zoneHandlers(() => 'head')
 
   // Facial features, in head-local coordinates (origin = neck pivot).
-  const skullZ = 0.3 * L
+  const skullZ = lay.skullZ
   const eyeZ = skullZ + 0.27
-  const tipZ = 0.38 * L + 0.1 + 0.18 * sl // front of the muzzle
+  const tipZ = lay.tipZ // front of the muzzle
   const mat = <meshStandardMaterial vertexColors flatShading roughness={0.9} />
   const std = (color: string) => (
     <meshStandardMaterial color={color} flatShading roughness={0.9} />
@@ -313,8 +313,8 @@ export function Dog({ look: liveLook }: { look: Appearance }) {
           {/* Mouth (a thin line when closed) + tongue */}
           <mesh
             ref={mouth}
-            position={[0, -0.01, tipZ - 0.13]}
-            scale={[0.11, 0.005, 0.1 + 0.1 * sl]}
+            position={[0, -0.02, tipZ - 0.15]}
+            scale={[0.075, 0.005, 0.12]}
             raycast={noRaycast}
           >
             <sphereGeometry args={[1, 12, 8]} />
@@ -322,8 +322,8 @@ export function Dog({ look: liveLook }: { look: Appearance }) {
           </mesh>
           <mesh
             ref={tongue}
-            position={[0, -0.025, tipZ - 0.1]}
-            scale={[0.065, 0.01, 0.09]}
+            position={[0, -0.035, tipZ - 0.12]}
+            scale={[0.05, 0.01, 0.075]}
             raycast={noRaycast}
           >
             <sphereGeometry args={[1, 12, 8]} />
@@ -331,7 +331,7 @@ export function Dog({ look: liveLook }: { look: Appearance }) {
           </mesh>
           {/* Big nose */}
           <mesh
-            position={[0, 0.15, tipZ + 0.05]}
+            position={[0, 0.17, tipZ + 0.02]}
             scale={[1.25, 0.85, 1]}
             raycast={noRaycast}
           >
@@ -340,7 +340,7 @@ export function Dog({ look: liveLook }: { look: Appearance }) {
           </mesh>
           {/* Small dark eyes with a tiny highlight */}
           {([-1, 1] as const).map((side) => (
-            <group key={side} position={[side * 0.2, 0.36, eyeZ]} raycast={noRaycast}>
+            <group key={side} position={[side * 0.19, 0.37, eyeZ]} raycast={noRaycast}>
               <mesh ref={side < 0 ? eyeL : eyeR} raycast={noRaycast}>
                 <icosahedronGeometry args={[0.06, 1]} />
                 <meshStandardMaterial color={DARK} flatShading roughness={0.25} />
