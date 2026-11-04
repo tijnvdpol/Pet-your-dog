@@ -5,8 +5,12 @@ import { haptic } from '../game/haptics'
 import { moodFrom } from '../game/meters'
 import { activeActivity, currentMeters, useDog, type PetZone } from '../game/store'
 import type { Appearance } from './appearance'
+import { GradSphere } from './GradSphere'
 
-const DARK = '#2a1d16'
+const DARK = '#24170f'
+const IRIS = '#4a2c18'
+const MOUTH = '#6a2430'
+const TONGUE = '#f2828f'
 const WHITE = '#fffaf0'
 /** Distance (world units) of finger movement that counts as one stroke. */
 const STROKE_DISTANCE = 0.5
@@ -38,20 +42,32 @@ export function Dog({ look }: { look: Appearance }) {
   const legBL = useRef<Group>(null)
   const legBR = useRef<Group>(null)
   const bowl = useRef<Group>(null)
+  const mouth = useRef<Mesh>(null)
+  const tongue = useRef<Mesh>(null)
 
-  const pose = useRef({ lie: 0, headX: 0, wag: 0, earDrop: 0, eyes: 1, kick: 0, sad: 0 })
+  const pose = useRef({
+    lie: 0,
+    headX: 0,
+    wag: 0,
+    earDrop: 0,
+    eyes: 1,
+    kick: 0,
+    sad: 0,
+    mouth: 0,
+    tongue: 0,
+  })
   const stroke = useRef({ down: false, last: null as Vector3 | null, dist: 0 })
 
   // ---- derived dimensions ----
   const H = look.legLength
   const w = 0.85 + 0.3 * look.build // body width factor
   const L = look.bodyLength
-  const legR = 0.075 + 0.04 * look.build
+  const legR = 0.07 + 0.035 * look.build
   const bodyY = H + 0.08
   const bodyR = [0.55 * w, 0.5 * w, 0.85 * L] as const
   const snoutScaleZ = 0.8 + 0.7 * look.snoutLength
-  const snoutZ = 0.38 + 0.25 * look.snoutLength
-  const noseZ = snoutZ + 0.2 * snoutScaleZ
+  const snoutZ = 0.46 + 0.2 * look.snoutLength
+  const noseZ = snoutZ + 0.19 * snoutScaleZ
   const dir = look.earType === 'upright' ? 1 : -1
   const earBase = look.earType === 'upright' ? 0.2 : 0.15
   const earBaseX = look.earType === 'half' ? 0.45 : 0
@@ -62,6 +78,8 @@ export function Dog({ look }: { look: Appearance }) {
       fur: look.furColor,
       second: look.secondColor,
       belly: `#${fur.clone().lerp(new Color(WHITE), 0.6).getHexString()}`,
+      chin: `#${fur.clone().lerp(new Color(WHITE), 0.3).getHexString()}`,
+      toe: `#${fur.clone().multiplyScalar(0.8).getHexString()}`,
     }
   }, [look.furColor, look.secondColor])
 
@@ -134,7 +152,28 @@ export function Dog({ look }: { look: Appearance }) {
 
     p.lie = damp(p.lie, sleeping ? 1 : sulking ? 0.55 : 0, 4, dt)
     p.sad = damp(p.sad, sulking ? 1 : 0, 3, dt)
-    p.eyes = damp(p.eyes, sleeping ? 0.08 : 1, 8, dt)
+    const blink = t % 3.7 < 0.12 ? 0.1 : 1
+    p.eyes = damp(p.eyes, sleeping ? 0.08 : blink, 25, dt)
+    const mouthTarget = petting
+      ? 1
+      : eating
+        ? 0.5 + 0.5 * Math.abs(Math.sin(t * 9))
+        : sleeping || sulking
+          ? 0
+          : mood === 'happy'
+            ? 0.55 + 0.15 * Math.sin(t * 8)
+            : 0.12
+    p.mouth = damp(p.mouth, mouthTarget, 10, dt)
+    p.tongue = damp(
+      p.tongue,
+      petting || (mood === 'happy' && !sleeping && !eating)
+        ? 1
+        : mood === 'neutral' && !sleeping && !eating
+          ? 0.25
+          : 0,
+      6,
+      dt,
+    )
     p.earDrop = damp(p.earDrop, sulking || sleeping ? 0.5 : 0, 4, dt)
 
     const wagTarget = petting
@@ -187,11 +226,18 @@ export function Dog({ look }: { look: Appearance }) {
     }
     if (legBR.current) legBR.current.rotation.x = Math.sin(t * 28) * 0.7 * p.kick
     if (bowl.current) bowl.current.visible = eating
+    if (mouth.current) mouth.current.scale.y = 0.005 + 0.07 * p.mouth
+    if (tongue.current) {
+      tongue.current.scale.y = 0.01 + 0.1 * p.tongue
+      tongue.current.position.y = -0.1 - 0.05 * p.tongue
+    }
   })
 
   const body = zoneHandlers((e) => (e.point.y < H * look.size * 0.85 ? 'belly' : 'back'))
   const headZone = zoneHandlers(() => 'head')
-  const showSocks = look.marking === 'socks'
+  const socks = look.marking === 'socks'
+  const darkMuzzle = look.marking === 'mask' || look.marking === 'saddle'
+  const pawColor = socks ? WHITE : colors.fur
 
   const legSpots = [
     [legFL, -0.2 * w, 0.45 * L],
@@ -200,28 +246,30 @@ export function Dog({ look }: { look: Appearance }) {
     [legBR, 0.22 * w, -0.5 * L],
   ] as const
 
+  const std = (color: string) => <meshStandardMaterial color={color} roughness={0.85} />
+
   const ear = (side: -1 | 1) => (
     <group
       ref={side < 0 ? earL : earR}
       position={[
-        side * (look.earType === 'upright' ? 0.2 : 0.3),
-        look.earType === 'upright' ? 0.5 : 0.42,
-        0.12,
+        side * (look.earType === 'upright' ? 0.22 : 0.34),
+        look.earType === 'upright' ? 0.55 : 0.46,
+        0.14,
       ]}
       rotation={[earBaseX, 0, side * -dir * earBase]}
     >
       {look.earType === 'upright' ? (
-        <mesh position={[0, 0.16, 0]}>
-          <coneGeometry args={[0.15, 0.4, 14]} />
-          <meshToonMaterial color={colors.second} />
+        <mesh position={[0, 0.17, 0]} scale={[1, 1, 0.55]}>
+          <coneGeometry args={[0.16, 0.42, 16]} />
+          {std(colors.second)}
         </mesh>
       ) : (
         <mesh
-          position={[0, look.earType === 'half' ? -0.12 : -0.18, 0]}
-          scale={[0.12, look.earType === 'half' ? 0.2 : 0.27, 0.18]}
+          position={[0, look.earType === 'half' ? -0.12 : -0.2, 0]}
+          scale={[0.12, look.earType === 'half' ? 0.2 : 0.29, 0.19]}
         >
-          <sphereGeometry args={[1, 14, 12]} />
-          <meshToonMaterial color={colors.second} />
+          <sphereGeometry args={[1, 16, 14]} />
+          {std(colors.second)}
         </mesh>
       )}
     </group>
@@ -230,29 +278,43 @@ export function Dog({ look }: { look: Appearance }) {
   return (
     <group ref={root}>
       <group ref={upper}>
-        {/* Body, chest and belly */}
-        <mesh position={[0, bodyY, 0]} scale={[...bodyR]} {...body}>
-          <sphereGeometry args={[1, 28, 20]} />
-          <meshToonMaterial color={colors.fur} />
-        </mesh>
+        {/* Body: fur on top fading to a lighter belly */}
+        <GradSphere
+          position={[0, bodyY, 0]}
+          scale={[...bodyR]}
+          top={colors.fur}
+          bottom={colors.belly}
+          mid={-0.25}
+          {...body}
+        />
+        {/* Neck and chest bib connect head and body smoothly */}
+        <GradSphere
+          position={[0, bodyY + 0.1, 0.5 * L]}
+          scale={[0.34 * w, 0.4, 0.34]}
+          top={colors.fur}
+          bottom={colors.belly}
+          mid={-0.5}
+          raycast={noRaycast}
+        />
         <mesh
-          position={[0, bodyY - 0.24 * w, 0.05]}
-          scale={[0.4 * w, 0.3, 0.65 * L]}
+          position={[0, bodyY - 0.08, 0.6 * L]}
+          scale={[0.26 * w, 0.3, 0.2]}
           raycast={noRaycast}
         >
-          <sphereGeometry args={[1, 16, 12]} />
-          <meshToonMaterial color={colors.belly} />
-        </mesh>
-        {/* Chest bib */}
-        <mesh
-          position={[0, bodyY - 0.1, 0.55 * L]}
-          scale={[0.28 * w, 0.3, 0.22]}
-          raycast={noRaycast}
-        >
-          <sphereGeometry args={[1, 14, 12]} />
-          <meshToonMaterial color={colors.belly} />
+          <sphereGeometry args={[1, 16, 14]} />
+          {std(colors.belly)}
         </mesh>
 
+        {look.marking === 'saddle' && (
+          <mesh
+            position={[0, bodyY + 0.004, -0.02]}
+            scale={[bodyR[0] * 1.02, bodyR[1] * 1.02, bodyR[2] * 1.02]}
+            raycast={noRaycast}
+          >
+            <sphereGeometry args={[1, 28, 12, 0, Math.PI * 2, 0, 1.0]} />
+            {std(colors.second)}
+          </mesh>
+        )}
         {look.marking === 'spots' &&
           spots.map((s, i) => (
             <mesh
@@ -263,7 +325,7 @@ export function Dog({ look }: { look: Appearance }) {
               raycast={noRaycast}
             >
               <sphereGeometry args={[1, 12, 10]} />
-              <meshToonMaterial color={colors.second} />
+              {std(colors.second)}
             </mesh>
           ))}
 
@@ -272,79 +334,115 @@ export function Dog({ look }: { look: Appearance }) {
           <group ref={tailWag}>
             <group rotation={[-0.9, 0, 0]}>
               <mesh position={[0, 0.3 * look.tailLength, 0]}>
-                <capsuleGeometry args={[0.07, 0.45 * look.tailLength, 4, 10]} />
-                <meshToonMaterial color={colors.second} />
+                <capsuleGeometry args={[0.07, 0.45 * look.tailLength, 6, 12]} />
+                {std(colors.second)}
               </mesh>
             </group>
           </group>
         </group>
 
-        {/* Head (pivot at the neck) */}
+        {/* Head (pivot at the neck): big and round for the cute look */}
         <group ref={head} position={[0, bodyY + 0.2, 0.55 * L]} {...headZone}>
-          <mesh position={[0, 0.15, 0.2]} scale={[1.05, 0.98, 0.98]}>
-            <sphereGeometry args={[0.4, 28, 20]} />
-            <meshToonMaterial color={colors.fur} />
-          </mesh>
+          <GradSphere
+            position={[0, 0.17, 0.2]}
+            scale={[1.04, 0.98, 0.98]}
+            radius={0.46}
+            top={colors.fur}
+            bottom={colors.chin}
+            mid={-0.3}
+          />
           {/* Snout */}
-          <mesh position={[0, 0.03, snoutZ]} scale={[1, 0.8, snoutScaleZ]}>
-            <sphereGeometry args={[0.2, 18, 14]} />
-            <meshToonMaterial
-              color={look.marking === 'mask' ? colors.second : colors.belly}
-            />
+          <mesh position={[0, 0.06, snoutZ]} scale={[1, 0.8, snoutScaleZ]}>
+            <sphereGeometry args={[0.2, 20, 16]} />
+            {std(darkMuzzle ? colors.second : colors.chin)}
           </mesh>
-          <mesh position={[0, 0.1, noseZ]}>
-            <sphereGeometry args={[0.07, 14, 10]} />
-            <meshToonMaterial color={look.marking === 'mask' ? '#6b4a3a' : DARK} />
+          {/* Open mouth + tongue */}
+          <mesh
+            ref={mouth}
+            position={[0, -0.08, snoutZ + 0.05]}
+            scale={[0.12, 0.005, 0.2 * snoutScaleZ]}
+            raycast={noRaycast}
+          >
+            <sphereGeometry args={[1, 14, 10]} />
+            <meshStandardMaterial color={MOUTH} roughness={0.6} />
+          </mesh>
+          <mesh
+            ref={tongue}
+            position={[0, -0.1, snoutZ + 0.1 * snoutScaleZ + 0.03]}
+            scale={[0.075, 0.01, 0.11]}
+            raycast={noRaycast}
+          >
+            <sphereGeometry args={[1, 14, 10]} />
+            <meshStandardMaterial color={TONGUE} roughness={0.5} />
+          </mesh>
+          <mesh position={[0, 0.14, noseZ]} scale={[1.15, 0.85, 1]}>
+            <sphereGeometry args={[0.07, 16, 12]} />
+            <meshStandardMaterial
+              color={darkMuzzle ? '#6b4a3a' : DARK}
+              roughness={0.35}
+            />
           </mesh>
           {look.marking === 'blaze' && (
             <mesh
-              position={[0, 0.3, 0.46]}
+              position={[0, 0.36, 0.52]}
               rotation={[0.9, 0, 0]}
               scale={[0.07, 0.2, 0.03]}
               raycast={noRaycast}
             >
               <sphereGeometry args={[1, 12, 10]} />
-              <meshToonMaterial color={WHITE} />
+              {std(WHITE)}
             </mesh>
           )}
-          {/* Eyes with highlight */}
+          {/* Big glossy eyes with iris and two highlights */}
           {([-1, 1] as const).map((side) => (
-            <mesh
-              key={side}
-              ref={side < 0 ? eyeL : eyeR}
-              position={[side * 0.17, 0.26, 0.5]}
-              raycast={noRaycast}
-            >
-              <sphereGeometry args={[0.085, 14, 10]} />
-              <meshToonMaterial color={DARK} />
-              <mesh position={[0.025, 0.035, 0.07]}>
-                <sphereGeometry args={[0.025, 8, 6]} />
-                <meshBasicMaterial color="white" />
+            <group key={side} position={[side * 0.19, 0.3, 0.56]} raycast={noRaycast}>
+              <mesh ref={side < 0 ? eyeL : eyeR} raycast={noRaycast}>
+                <sphereGeometry args={[0.1, 18, 14]} />
+                <meshStandardMaterial color={DARK} roughness={0.2} />
+                <mesh position={[0, 0, 0.012]} scale={[0.82, 0.82, 0.9]}>
+                  <sphereGeometry args={[0.1, 14, 10]} />
+                  <meshStandardMaterial color={IRIS} roughness={0.25} />
+                </mesh>
+                <mesh position={[0.035, 0.04, 0.085]}>
+                  <sphereGeometry args={[0.03, 8, 6]} />
+                  <meshBasicMaterial color="white" />
+                </mesh>
+                <mesh position={[-0.03, -0.035, 0.092]}>
+                  <sphereGeometry args={[0.014, 8, 6]} />
+                  <meshBasicMaterial color="white" />
+                </mesh>
               </mesh>
-            </mesh>
+            </group>
           ))}
           {ear(-1)}
           {ear(1)}
         </group>
       </group>
 
-      {/* Legs (pivot at the top so they can fold when lying down) */}
+      {/* Legs: tapered, with paws and toes; pivot at the top so they fold when lying down */}
       {legSpots.map(([ref, x, z], i) => (
         <group key={i} ref={ref} position={[x, H, z]}>
-          <mesh position={[0, -H / 2, 0]}>
-            <capsuleGeometry args={[legR, H - 2 * legR, 4, 12]} />
-            <meshToonMaterial color={colors.fur} />
+          <mesh position={[0, -(H - 0.05) / 2, 0]}>
+            <cylinderGeometry args={[legR * 1.1, legR * 0.8, H - 0.05, 14]} />
+            {std(colors.fur)}
           </mesh>
-          {showSocks && (
+          <mesh position={[0, -H + legR * 0.75, legR * 0.35]} scale={[1, 0.6, 1.45]}>
+            <sphereGeometry args={[legR * 1.25, 14, 10]} />
+            {std(pawColor)}
+          </mesh>
+          {[-0.45, 0, 0.45].map((tx) => (
             <mesh
-              position={[0, -H + legR + 0.03, 0]}
-              scale={[1.12, 1, 1.12]}
-              raycast={noRaycast}
+              key={tx}
+              position={[
+                tx * legR * 1.4,
+                -H + legR * 0.4,
+                legR * 1.65 - Math.abs(tx) * legR * 0.4,
+              ]}
             >
-              <sphereGeometry args={[legR * 1.1, 12, 10]} />
-              <meshToonMaterial color={WHITE} />
+              <sphereGeometry args={[legR * 0.3, 8, 6]} />
+              {std(socks ? '#e6dccb' : colors.toe)}
             </mesh>
-          )}
+          ))}
         </group>
       ))}
 
@@ -352,7 +450,7 @@ export function Dog({ look }: { look: Appearance }) {
       <group ref={bowl} position={[0, 0, 1.55 * L]} visible={false}>
         <mesh position={[0, 0.08, 0]}>
           <cylinderGeometry args={[0.28, 0.2, 0.16, 20]} />
-          <meshToonMaterial color="#d95f5f" />
+          {std('#d95f5f')}
         </mesh>
       </group>
     </group>

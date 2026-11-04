@@ -1,6 +1,7 @@
 /** Everything that makes one dog look different from another. Drives the procedural model. */
 export type EarType = 'upright' | 'floppy' | 'half'
-export type Marking = 'none' | 'blaze' | 'socks' | 'mask' | 'spots'
+/** `saddle` = dark back patch plus dark muzzle (shepherd-style). */
+export type Marking = 'none' | 'blaze' | 'socks' | 'mask' | 'spots' | 'saddle'
 
 export interface Appearance {
   /** Overall scale, ~0.7 (small) to 1.15 (large). */
@@ -49,7 +50,7 @@ export const PRESETS: Record<string, { label: string; look: Appearance }> = {
       earType: 'upright',
       furColor: '#c98f55',
       secondColor: '#3a2a20',
-      marking: 'mask',
+      marking: 'saddle',
     },
   },
   dalmatian: {
