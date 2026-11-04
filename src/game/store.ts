@@ -2,9 +2,14 @@ import { create } from 'zustand'
 import { DEFAULT_APPEARANCE, type Appearance } from '../dog/appearance'
 import { persist } from 'zustand/middleware'
 import {
+  DEFAULT_CHARACTER,
+  decayRates,
+  parseCharacter,
+  type Character,
+} from './character'
+import {
   applyDelta,
   currentValue,
-  DECAY_PER_HOUR,
   freshMeter,
   METER_IDS,
   type Meter,
@@ -35,8 +40,11 @@ interface DogState {
   lastSeen: number
   meters: Record<MeterId, Meter>
   appearance: Appearance
+  character: Character
   activity: Activity
   setAppearance: (a: Partial<Appearance>) => void
+  setCharacter: (c: Partial<Character>) => void
+  setName: (name: string) => void
   /** Marks the dog as 'seen now'. */
   touch: () => void
   /** Replaces local state with data from the server. */
@@ -46,6 +54,7 @@ interface DogState {
     lastSeen: number
     meters: Record<MeterId, Meter>
     appearance: Appearance
+    character: Character
   }) => void
   /** Back to a fresh dog (used on sign-out so accounts never mix). */
   reset: () => void
@@ -80,7 +89,7 @@ export const useDog = create<DogState>()(
     (set, get) => {
       const boost = (id: MeterId, delta: number, now: number) => ({
         ...get().meters,
-        [id]: applyDelta(get().meters[id], DECAY_PER_HOUR[id], now, delta),
+        [id]: applyDelta(get().meters[id], decayRates(get().character)[id], now, delta),
       })
       return {
         dogId: null,
@@ -88,8 +97,11 @@ export const useDog = create<DogState>()(
         lastSeen: Date.now(),
         meters: initialMeters(Date.now()),
         appearance: DEFAULT_APPEARANCE,
+        character: DEFAULT_CHARACTER,
         activity: IDLE,
         setAppearance: (a) => set({ appearance: { ...get().appearance, ...a } }),
+        setCharacter: (c) => set({ character: { ...get().character, ...c } }),
+        setName: (name) => set({ name: name.slice(0, 40) }),
         touch: () => set({ lastSeen: Date.now() }),
         applyRemote: (d) => set({ ...d, activity: IDLE }),
         reset: () => {
@@ -100,6 +112,7 @@ export const useDog = create<DogState>()(
             lastSeen: now,
             meters: initialMeters(now),
             appearance: DEFAULT_APPEARANCE,
+            character: DEFAULT_CHARACTER,
             activity: IDLE,
           })
         },
@@ -147,7 +160,12 @@ export const useDog = create<DogState>()(
           )
             return
           set({
-            meters: boost('happiness', zone === 'belly' ? 3 : 2, now),
+            meters: boost(
+              'happiness',
+              (zone === 'belly' ? 3 : 2) +
+                (zone === get().character.favoriteSpot ? 2 : 0),
+              now,
+            ),
             activity: { kind: 'pet', zone, until: now + PET_MS },
           })
         },
@@ -161,14 +179,30 @@ export const useDog = create<DogState>()(
         lastSeen: s.lastSeen,
         meters: s.meters,
         appearance: s.appearance,
+        character: s.character,
       }),
+      // Older saves lack newer fields: fill the gaps from the defaults.
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<DogState>
+        return {
+          ...current,
+          ...p,
+          appearance: { ...DEFAULT_APPEARANCE, ...(p.appearance ?? {}) },
+          character: parseCharacter(p.character),
+        }
+      },
     },
   ),
 )
 
 /** Current (decayed) values for all meters. */
-export function currentMeters(meters: Record<MeterId, Meter>, now: number) {
+export function currentMeters(
+  meters: Record<MeterId, Meter>,
+  now: number,
+  character: Character = DEFAULT_CHARACTER,
+) {
+  const rates = decayRates(character)
   return Object.fromEntries(
-    METER_IDS.map((id) => [id, currentValue(meters[id], DECAY_PER_HOUR[id], now)]),
+    METER_IDS.map((id) => [id, currentValue(meters[id], rates[id], now)]),
   ) as Record<MeterId, number>
 }

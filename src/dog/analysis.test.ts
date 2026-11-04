@@ -33,13 +33,14 @@ describe('analysisToAppearance', () => {
   it('maps traits to model parameters', () => {
     const look = analysisToAppearance(parseAnalysis(good)!)
     expect(look).toMatchObject({
+      baseModel: 'medium',
       size: 0.95,
       build: 0.8,
-      legLength: 0.5,
       earType: 'floppy',
       marking: 'socks',
       furColor: '#b8743a',
     })
+    expect(look.legLength).toBeCloseTo(0.65 * 0.75) // medium base, short legs
     expect(look.bodyLength).toBeGreaterThan(1) // short legs => slightly longer body
   })
 })

@@ -144,7 +144,7 @@ export function Dog({ look }: { look: Appearance }) {
     const now = Date.now()
     const state = useDog.getState()
     const act = activeActivity(state.activity, now)
-    const mood = moodFrom(currentMeters(state.meters, now))
+    const mood = moodFrom(currentMeters(state.meters, now, state.character))
     const p = pose.current
 
     const sleeping = act.kind === 'sleep'

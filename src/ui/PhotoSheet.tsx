@@ -31,18 +31,15 @@ const ERRORS: Record<string, string> = {
   analysis_failed: 'De analyse is mislukt. Probeer het zo nog eens.',
 }
 
-/** Button + sheet: pick a photo of your dog and let the avatar copy its looks. */
-export function PhotoButton() {
+/** Tab content: pick a photo of your dog and let the avatar copy its looks. */
+export function PhotoTab() {
   const session = useAuth((s) => s.session)
   const dogId = useDog((s) => s.dogId)
   const name = useDog((s) => s.name)
   const setAppearance = useDog((s) => s.setAppearance)
   const input = useRef<HTMLInputElement>(null)
-  const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
-
-  if (!supabase) return null
 
   const onFile = async (file: File | undefined) => {
     if (!file || !session || !dogId) return
@@ -98,63 +95,39 @@ export function PhotoButton() {
   }
 
   return (
-    <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="absolute bottom-3 left-3 rounded-full bg-white/90 px-3 py-1.5 text-xs font-semibold shadow-md active:scale-95"
-      >
-        📷 Maak {name} na
-      </button>
-      {open && (
-        <div
-          className="absolute inset-0 z-10 flex items-end bg-black/30"
-          onClick={() => !busy && setOpen(false)}
-        >
-          <div
-            className="w-full rounded-t-3xl bg-white p-5 pb-[max(env(safe-area-inset-bottom),1.25rem)]"
-            onClick={(e) => e.stopPropagation()}
+    <div>
+      {!session ? (
+        <p className="text-sm">
+          Log eerst in via de wolk rechtsonder, dan kun je een foto uploaden.
+        </p>
+      ) : (
+        <>
+          <p className="mb-3 text-sm">
+            Kies een duidelijke foto van je hond, liefst van de zijkant of schuin voor. De
+            foto blijft privé en wordt alleen gebruikt om het uiterlijk te bepalen. Daarna
+            kun je het resultaat nog bijstellen bij “Uiterlijk”.
+          </p>
+          <input
+            ref={input}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              void onFile(e.target.files?.[0])
+              e.target.value = ''
+            }}
+          />
+          <button
+            type="button"
+            disabled={busy || !dogId}
+            onClick={() => input.current?.click()}
+            className="w-full rounded-xl bg-orange-400 py-3 font-semibold text-white disabled:opacity-50"
           >
-            <p className="font-semibold">Laat {name} op jouw hond lijken</p>
-            {!session ? (
-              <p className="mt-2 text-sm">
-                Log eerst in via de wolk rechtsonder, dan kun je een foto uploaden.
-              </p>
-            ) : (
-              <>
-                <p className="mt-2 mb-3 text-sm">
-                  Kies een duidelijke foto van je hond, liefst van de zijkant of schuin
-                  voor. De foto blijft privé en wordt alleen gebruikt om het uiterlijk te
-                  bepalen.
-                </p>
-                <input
-                  ref={input}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    void onFile(e.target.files?.[0])
-                    e.target.value = ''
-                  }}
-                />
-                <button
-                  type="button"
-                  disabled={busy || !dogId}
-                  onClick={() => input.current?.click()}
-                  className="w-full rounded-xl bg-orange-400 py-3 font-semibold text-white disabled:opacity-50"
-                >
-                  {busy
-                    ? 'Bezig met analyseren…'
-                    : dogId
-                      ? 'Kies een foto'
-                      : 'Even geduld…'}
-                </button>
-              </>
-            )}
-            {message && <p className="mt-3 text-sm">{message}</p>}
-          </div>
-        </div>
+            {busy ? 'Bezig met analyseren…' : dogId ? 'Kies een foto' : 'Even geduld…'}
+          </button>
+        </>
       )}
-    </>
+      {message && <p className="mt-3 text-sm">{message}</p>}
+    </div>
   )
 }

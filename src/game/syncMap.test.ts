@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_APPEARANCE } from '../dog/appearance'
+import { DEFAULT_CHARACTER } from './character'
 import { fromRemote, toStatsRow, type LocalDog } from './syncMap'
 
 const local: LocalDog = {
@@ -11,6 +12,7 @@ const local: LocalDog = {
     happiness: { value: 90, updatedAt: 1_700_000_200_000 },
   },
   appearance: { ...DEFAULT_APPEARANCE, furColor: '#112233' },
+  character: { ...DEFAULT_CHARACTER, energy: 5, favoriteToy: 'rope' },
 }
 
 describe('sync mapping', () => {
@@ -20,6 +22,7 @@ describe('sync mapping', () => {
         id: 'x',
         name: 'Max',
         appearance: local.appearance,
+        character: local.character,
         dog_stats: toStatsRow(local),
       },
       0,
@@ -41,5 +44,6 @@ describe('sync mapping', () => {
     expect(back.appearance).toEqual(DEFAULT_APPEARANCE)
     expect(back.meters.hunger).toEqual({ value: 80, updatedAt: 5000 })
     expect(back.lastSeen).toBe(5000)
+    expect(back.character).toEqual(DEFAULT_CHARACTER)
   })
 })
