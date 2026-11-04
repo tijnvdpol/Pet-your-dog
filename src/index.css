@@ -1,0 +1,19 @@
+@import 'tailwindcss';
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  overscroll-behavior: none;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  background: #ffe9c7;
+  color: #4a3424;
+}

@@ -155,12 +155,12 @@ Vijf fases; elke fase levert een werkende versie op die je kunt laten zien. Begi
 
 ### Fase 1 – Hond leeft (lokaal, geen backend)
 
-- [ ] Project opzetten: Vite + React + TS, Tailwind, R3F + drei, Zustand, ESLint/Prettier
+- [x] Project opzetten: Vite + React + TS, Tailwind, R3F + drei, Zustand, oxlint/Prettier
 - [ ] Gratis geriggede gestileerde hond (CC0) zoeken of maken, licentie vastleggen in `ASSETS.md`
-- [ ] Model laden als GLB, camera en licht instellen, idle-animatie afspelen
-- [ ] Aaien: vegen over de hond → kwispelen + trilletje; zones (kop, rug, buik)
-- [ ] Meters (honger, energie, blijheid) met daalformule, lokaal opgeslagen in localStorage
-- [ ] Knoppen voeren en slapen met bijbehorende animaties
+- [x] Camera en licht instellen, idle-animatie afspelen (met placeholder-hond; GLB laden volgt zodra er een model is)
+- [x] Aaien: vegen over de hond → kwispelen + trilletje; zones (kop, rug, buik)
+- [x] Meters (honger, energie, blijheid) met daalformule, lokaal opgeslagen in localStorage
+- [x] Knoppen voeren en slapen met bijbehorende animaties
 - [ ] Mobiele layout (staand), getest op een echte telefoon
 
 **Klaar als:** de hond laadt in < 3 s op 4G, draait soepel op je telefoon, reageert op aaien en de meters dalen na een uur echt.
