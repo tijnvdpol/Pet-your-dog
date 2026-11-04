@@ -195,6 +195,21 @@ Vijf fases; elke fase levert een werkende versie op die je kunt laten zien. Begi
 
 **Klaar als:** 8 van de 10 testfoto's van verschillende honden een herkenbare avatar opleveren zonder handmatige correctie.
 
+### Fase 3b – Nieuw hondenmodel (SDF, in code)
+
+Het low-poly model v3 is vervangen in de planning door een gladde, geriggede hond uit één GLB (`public/models/dog_large.glb`). Het oude model (`src/dog/`) blijft in de app staan tot het nieuwe is goedgekeurd.
+
+- [x] Bouwscript `tools/dog/build.ts` (`npx tsx tools/dog/build.ts`): SDF → surface nets → decimeren → projecteren op het oppervlak → skin weights, kleurzones, morph targets → GLB met meshopt (nu ~150 kB, ~13k driehoeken)
+- [x] Skelet in code (32 botten: spine 3, nek, kop, kaak, 2×2 oor, 5 staart, 2×(3 poot + voet))
+- [x] Ogen, oogleden en wenkbrauwen als aparte meshes met morphs `blink`, `happy_eyes`, `sad_brows`; kaak via bot (`mouth_open`)
+- [x] Vormvarianten als morph targets: `ears_up`, `ears_half`, `snout_long`, `snout_short`, `body_slim`, `body_chunky`, `tail_long`, `tail_short`
+- [x] `src/components/Dog.tsx` (toon-shading, kleurzones, rim light, crossfade 0,25 s, blink, ear/tail follow-through) en previewpagina `/dev/dog` met leva-sliders
+- [x] Elf animatieclips (procedureel gebakken tot echte `AnimationClip`s; loops getest op naadloosheid)
+- [x] Ronde 1 (`previews/round_1/`)
+- [ ] Ronde 2 en 3 (feedback verwerken, zie `previews/round_1/RONDE_1.md`)
+- [ ] Meten: 60 fps op een middenklasse telefoon en laden < 3 s op 4G
+- [ ] Nieuwe hond in de app aansluiten (vervangt `src/dog/Dog.tsx`) na akkoord
+
 ### Fase 4 – Spelen en groeien
 
 - [ ] Bal gooien met swipe (simpele fysica)
