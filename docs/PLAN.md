@@ -181,7 +181,7 @@ Vijf fases; elke fase levert een werkende versie op die je kunt laten zien. Begi
 
 ### Fase 3 – Jouw hond
 
-- [x] Upload foto naar Storage, Edge Function met vision-model, vast JSON-schema (gebouwd en getest op alles behalve de modelaanroep zelf: wacht op `ANTHROPIC_API_KEY`-secret)
+- [x] Upload foto naar Storage, Edge Function met vision-model, vast JSON-schema (gebouwd en getest op alles behalve de modelaanroep zelf: wacht op `GEMINI_API_KEY`-secret)
 - [x] Kleuren + aftekening + oorvorm toepassen op het model (`src/dog/analysis.ts`, met tests)
 - [ ] Handmatig bijstellen (kleurkiezer, oren, staart)
 - [ ] Middel- en klein-basismodel toevoegen
