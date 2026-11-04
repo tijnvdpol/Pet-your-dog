@@ -18,12 +18,12 @@ De kernloop: openen → hond reageert op je → verzorgen → kort spelen → ie
 
 ### Meters
 
-| Meter | Daalt door | Aanvullen door |
-| --- | --- | --- |
-| Honger | Tijd (ca. leeg na 8–12 uur) | Voeren (brokjes, snoepje) |
-| Energie | Spelen, minigames | Slapen in de mand |
-| Blijheid | Tijd zonder aandacht | Aaien, spelen, trucjes |
-| Schoon | Wandelen, modder-events | Wassen/borstelen |
+| Meter    | Daalt door                  | Aanvullen door            |
+| -------- | --------------------------- | ------------------------- |
+| Honger   | Tijd (ca. leeg na 8–12 uur) | Voeren (brokjes, snoepje) |
+| Energie  | Spelen, minigames           | Slapen in de mand         |
+| Blijheid | Tijd zonder aandacht        | Aaien, spelen, trucjes    |
+| Schoon   | Wandelen, modder-events     | Wassen/borstelen          |
 
 Alle waarden 0–100. De daalsnelheid hangt af van het karakter (een drukke hond verliest sneller energie, een luie hond wil meer slapen).
 
@@ -73,12 +73,12 @@ Geen nieuw 3D-model per hond genereren, maar een paar geriggede basismodellen pe
 
 ### Basismodellen
 
-| Model | Voorbeeldrassen | Wanneer |
-| --- | --- | --- |
-| Groot | Labrador, herder, golden retriever | Fase 1 (eerste en enige model) |
-| Middel | Beagle, border collie | Fase 3 |
-| Klein | Teckel, chihuahua, jack russell | Fase 3 |
-| Pluizig | Poedel, husky, pomeriaan | Later |
+| Model   | Voorbeeldrassen                    | Wanneer                        |
+| ------- | ---------------------------------- | ------------------------------ |
+| Groot   | Labrador, herder, golden retriever | Fase 1 (eerste en enige model) |
+| Middel  | Beagle, border collie              | Fase 3                         |
+| Klein   | Teckel, chihuahua, jack russell    | Fase 3                         |
+| Pluizig | Poedel, husky, pomeriaan           | Later                          |
 
 ### Personalisatie
 
@@ -89,6 +89,14 @@ Geen nieuw 3D-model per hond genereren, maar een paar geriggede basismodellen pe
 
 ### Stijl
 
+> **Model v4 (in gebruik, SDF in code → GLB):** gestileerde chocoladelabrador-pup, gebouwd door `tools/dog/build.ts` (SDF + smooth union → surface nets → glad, ~12,5k driehoeken lijf + losse ogen/neus/tong), met 32-botten skelet, automatische skin weights, morph targets (oren, snuit, bouw, staart, gezicht) en 11 keyframe-clips. Resultaat: `public/models/dog_large.glb` (~380 kB), te bekijken op `/dev/dog`. Rondes en screenshots: `previews/round_N/`.
+>
+> - [x] Ronde 1: model, skelet, morphs, animaties, `src/components/Dog.tsx`, `/dev/dog` met leva
+> - [x] Ronde 2: ambient occlusion, silhouet-randlicht, teentjes, levendiger Run/Jump, morph-fixes
+> - [x] Ronde 3: hond kijkt je aan, liggende poses, kleur- en aftekeningsvarianten
+> - [x] Integratie: `src/dog/LiveDog.tsx` koppelt spelstatus aan de animaties (aaien achter de oren = trappelende poot, rug/buik = kwispelen, voeren met bak, slapen, beledigd omdraaien, blij springen, verwaarloosd = zielig liggen); aaizones via de botten van het aangeraakte punt; de oude in-browser-hond is verwijderd
+> - [ ] Pootlengte als morph (teckel/corgi); klein en middel zijn nu alleen geschaald
+>
 > **Model v3 (low-poly, naar referentie):** de gladde delen worden met meshoptimizer vereenvoudigd tot grote vlakken, plat geschaduwd en per vlak in harde kleurblokken geverfd (crème en bruin), met hoekige oren, kleine ogen, een grote neus en pootjes met tenen. ~1.900 driehoeken.
 >
 > **Model v2 (basis):** de hond is geen verzameling bollen meer, maar glad gemodelleerde delen (lijf, kop, staart, voor- en achterpoot) uit signed-distance-fields (`src/dog/sdf.ts`, `mesher.ts`, `dogParts.ts`). Vachtkleuren en aftekeningen zitten als vertexkleuren in het oppervlak. ~16k driehoeken, opbouw ~0,15–0,3 s bij elke wijziging.
@@ -109,17 +117,17 @@ Idle/ademen, kwispelen, zitten, liggen, slapen, eten, rennen, rollen, blij sprin
 
 De frontend draait volledig in de browser; Supabase regelt accounts, opslag en de AI-analyse; Vercel host de site.
 
-| Laag | Keuze | Rol |
-| --- | --- | --- |
-| Frontend | Vite + React + TypeScript | App-structuur en UI |
-| 3D | React Three Fiber + drei | Hond renderen, animaties, camera |
-| State | Zustand | Spelstatus in de app |
-| Styling | Tailwind CSS | Snelle mobiele UI |
-| PWA | vite-plugin-pwa | Installeerbaar, offline, push |
-| Backend | Supabase (Auth, Postgres, Storage) | Accounts, honden, uploads |
-| AI | Supabase Edge Function + vision-model | Foto → kenmerken als JSON |
-| Planning | Supabase Cron + Web Push | Meldingen "ik heb honger" |
-| Hosting | Vercel (via GitHub) | Automatisch live bij elke push |
+| Laag     | Keuze                                 | Rol                              |
+| -------- | ------------------------------------- | -------------------------------- |
+| Frontend | Vite + React + TypeScript             | App-structuur en UI              |
+| 3D       | React Three Fiber + drei              | Hond renderen, animaties, camera |
+| State    | Zustand                               | Spelstatus in de app             |
+| Styling  | Tailwind CSS                          | Snelle mobiele UI                |
+| PWA      | vite-plugin-pwa                       | Installeerbaar, offline, push    |
+| Backend  | Supabase (Auth, Postgres, Storage)    | Accounts, honden, uploads        |
+| AI       | Supabase Edge Function + vision-model | Foto → kenmerken als JSON        |
+| Planning | Supabase Cron + Web Push              | Meldingen "ik heb honger"        |
+| Hosting  | Vercel (via GitHub)                   | Automatisch live bij elke push   |
 
 ### Meters berekenen zonder server-timer
 
@@ -133,14 +141,14 @@ Dat is goedkoop, werkt offline en kan niet "vergeten" worden. Alleen pushmelding
 
 ### Datamodel (eerste opzet)
 
-| Tabel | Belangrijkste velden |
-| --- | --- |
-| profiles | id, weergavenaam, push-abonnement, stille uren |
-| dogs | id, eigenaar, naam, basismodel, uiterlijk (JSON), karakter (JSON), level, XP |
-| dog\_stats | hond, honger, energie, blijheid, schoon, bijgewerkt\_op |
-| tricks | hond, trucje, vaardigheid (0–100) |
-| uploads | hond, opslagpad, type (foto/video), analyse (JSON) |
-| unlocks | hond, item, ontgrendeld\_op |
+| Tabel      | Belangrijkste velden                                                         |
+| ---------- | ---------------------------------------------------------------------------- |
+| profiles   | id, weergavenaam, push-abonnement, stille uren                               |
+| dogs       | id, eigenaar, naam, basismodel, uiterlijk (JSON), karakter (JSON), level, XP |
+| dog\_stats | hond, honger, energie, blijheid, schoon, bijgewerkt\_op                      |
+| tricks     | hond, trucje, vaardigheid (0–100)                                            |
+| uploads    | hond, opslagpad, type (foto/video), analyse (JSON)                           |
+| unlocks    | hond, item, ontgrendeld\_op                                                  |
 
 Row Level Security staat op elke tabel aan: een gebruiker ziet en wijzigt alleen zijn eigen honden.
 
@@ -160,7 +168,7 @@ Vijf fases; elke fase levert een werkende versie op die je kunt laten zien. Begi
 ### Fase 1 – Hond leeft (lokaal, geen backend)
 
 - [x] Project opzetten: Vite + React + TS, Tailwind, R3F + drei, Zustand, oxlint/Prettier
-- [x] Hond zelf maken als parametrisch model in code (geen extern model nodig, geen licentie); zie `src/dog/Dog.tsx` en `appearance.ts`
+- [x] Hond zelf maken als parametrisch model in code (geen extern model nodig, geen licentie); nu `tools/dog/` (bouwt de GLB), `src/components/Dog.tsx` en `appearance.ts`
 - [x] Camera en licht instellen, idle-animatie afspelen (met placeholder-hond; GLB laden volgt zodra er een model is)
 - [x] Aaien: vegen over de hond → kwispelen + trilletje; zones (kop, rug, buik)
 - [x] Meters (honger, energie, blijheid) met daalformule, lokaal opgeslagen in localStorage
@@ -267,11 +275,11 @@ Werk taak voor taak, en vertel na elke taak hoe ik het op mijn telefoon test.
 
 ### Risico's
 
-| Risico | Gevolg | Aanpak |
-| --- | --- | --- |
-| Avatar lijkt niet op de echte hond | Kern van het concept valt weg | Handmatig bijstellen + meerdere basismodellen; vroeg testen met echte foto's |
-| 3D te zwaar voor oudere telefoons | Haperen, afhaken | Prestatiebudget uit 3D-aanpak, testen op een oud toestel |
-| Push op iPhone werkt alleen na installatie | Minder terugkomers op iOS | Sterke installatie-onboarding; app ook zonder push leuk maken |
-| Licentie van gekochte/gratis modellen | Juridisch probleem bij publicatie | Alleen CC0 of commercieel licentievrij; vastleggen in ASSETS.md |
-| Kosten AI-analyse per upload | Kosten lopen op bij groei | Analyse één keer per hond, resultaat opslaan; limiet op uploads |
-| Privacy van foto's en video's | AVG-verplichtingen | Privé bucket, alleen eigen toegang, verwijderknop, korte privacyverklaring |
+| Risico                                     | Gevolg                            | Aanpak                                                                       |
+| ------------------------------------------ | --------------------------------- | ---------------------------------------------------------------------------- |
+| Avatar lijkt niet op de echte hond         | Kern van het concept valt weg     | Handmatig bijstellen + meerdere basismodellen; vroeg testen met echte foto's |
+| 3D te zwaar voor oudere telefoons          | Haperen, afhaken                  | Prestatiebudget uit 3D-aanpak, testen op een oud toestel                     |
+| Push op iPhone werkt alleen na installatie | Minder terugkomers op iOS         | Sterke installatie-onboarding; app ook zonder push leuk maken                |
+| Licentie van gekochte/gratis modellen      | Juridisch probleem bij publicatie | Alleen CC0 of commercieel licentievrij; vastleggen in ASSETS.md              |
+| Kosten AI-analyse per upload               | Kosten lopen op bij groei         | Analyse één keer per hond, resultaat opslaan; limiet op uploads              |
+| Privacy van foto's en video's              | AVG-verplichtingen                | Privé bucket, alleen eigen toegang, verwijderknop, korte privacyverklaring   |

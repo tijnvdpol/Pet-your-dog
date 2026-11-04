@@ -50,7 +50,23 @@ export const withBaseModel = (look: Appearance, baseModel: BaseModel): Appearanc
   baseModel,
 })
 
+/** The chocolate labrador pup the 3D model was designed around (tools/dog). */
 export const DEFAULT_APPEARANCE: Appearance = {
+  baseModel: 'large',
+  size: 1.05,
+  build: 0.55,
+  bodyLength: 1,
+  legLength: 0.72,
+  snoutLength: 0.5,
+  tailLength: 1,
+  earType: 'floppy',
+  furColor: '#6a4632',
+  secondColor: '#7a5540',
+  marking: 'none',
+}
+
+/** The previous default look, kept as the 'Pup' preset. */
+const PUP: Appearance = {
   baseModel: 'large',
   size: 1.05,
   build: 0.55,
@@ -80,7 +96,8 @@ const GOLDEN: Appearance = {
 }
 
 export const PRESETS: Record<string, { label: string; look: Appearance }> = {
-  pup: { label: 'Pup', look: DEFAULT_APPEARANCE },
+  lab: { label: 'Labrador', look: DEFAULT_APPEARANCE },
+  pup: { label: 'Pup', look: PUP },
   golden: { label: 'Golden', look: GOLDEN },
   shepherd: {
     label: 'Herder',
