@@ -169,9 +169,10 @@ Vijf fases; elke fase levert een werkende versie op die je kunt laten zien. Begi
 
 ### Fase 2 – Hond onthoudt
 
-- [ ] Supabase-project, Auth (e-mail magic link + Google)
-- [ ] Tabellen `profiles`, `dogs`, `dog_stats` met RLS
-- [ ] Status opslaan/laden; meters doorrekenen sinds laatste bezoek
+- [x] Supabase-project (`Pet your dog`, eu-north-1), Auth met e-mail magic link
+- [ ] Auth met Google (vraagt een Google Cloud OAuth-client)
+- [x] Tabellen `profiles`, `dogs`, `dog_stats` met RLS (zie `supabase/migrations/`; RLS getest met twee gebruikers)
+- [x] Status opslaan/laden; meters doorrekenen sinds laatste bezoek (test: tweede schone browser ziet dezelfde hond)
 - [x] Mokkig-gedrag en het "beledigd, dan blij"-welkom (na 3 uur weg; test met `?dev` → Welkom)
 - [x] PWA: manifest, iconen, offline cache, installatie-onboarding
 - [x] Deploy naar Vercel (project `pet-your-dog`, automatisch bij elke push)

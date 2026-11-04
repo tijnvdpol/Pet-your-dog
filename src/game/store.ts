@@ -28,6 +28,8 @@ const SLEEP_MS = 8000
 const PET_MS = 900
 
 interface DogState {
+  /** Id of the matching row in Supabase `dogs` once signed in. */
+  dogId: string | null
   name: string
   /** Last time the app was open; used for the welcome-back greeting. */
   lastSeen: number
@@ -37,6 +39,16 @@ interface DogState {
   setAppearance: (a: Partial<Appearance>) => void
   /** Marks the dog as 'seen now'. */
   touch: () => void
+  /** Replaces local state with data from the server. */
+  applyRemote: (d: {
+    dogId: string
+    name: string
+    lastSeen: number
+    meters: Record<MeterId, Meter>
+    appearance: Appearance
+  }) => void
+  /** Back to a fresh dog (used on sign-out so accounts never mix). */
+  reset: () => void
   /** Greets the owner if they were away long enough. `awayMs` overrides the real time (testing). */
   welcome: (awayMs?: number) => void
   feed: () => void
@@ -71,6 +83,7 @@ export const useDog = create<DogState>()(
         [id]: applyDelta(get().meters[id], DECAY_PER_HOUR[id], now, delta),
       })
       return {
+        dogId: null,
         name: 'Max',
         lastSeen: Date.now(),
         meters: initialMeters(Date.now()),
@@ -78,6 +91,18 @@ export const useDog = create<DogState>()(
         activity: IDLE,
         setAppearance: (a) => set({ appearance: { ...get().appearance, ...a } }),
         touch: () => set({ lastSeen: Date.now() }),
+        applyRemote: (d) => set({ ...d, activity: IDLE }),
+        reset: () => {
+          const now = Date.now()
+          set({
+            dogId: null,
+            name: 'Max',
+            lastSeen: now,
+            meters: initialMeters(now),
+            appearance: DEFAULT_APPEARANCE,
+            activity: IDLE,
+          })
+        },
         welcome: (awayMs) => {
           const now = Date.now()
           const away = awayMs ?? now - get().lastSeen
@@ -131,6 +156,7 @@ export const useDog = create<DogState>()(
     {
       name: 'virtuele-hond-v1',
       partialize: (s) => ({
+        dogId: s.dogId,
         name: s.name,
         lastSeen: s.lastSeen,
         meters: s.meters,

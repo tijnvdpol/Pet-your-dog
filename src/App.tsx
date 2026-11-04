@@ -1,5 +1,7 @@
 import { lazy, Suspense } from 'react'
+import { useSync } from './game/sync'
 import { usePresence } from './game/usePresence'
+import { AccountButton } from './ui/AccountButton'
 import { Actions } from './ui/Actions'
 import { InstallPrompt } from './ui/InstallPrompt'
 import { DevPanel } from './ui/DevPanel'
@@ -10,6 +12,7 @@ const Scene = lazy(() => import('./dog/Scene').then((m) => ({ default: m.Scene }
 
 export default function App() {
   usePresence()
+  useSync()
   return (
     <div className="mx-auto flex h-dvh max-w-[480px] flex-col bg-gradient-to-b from-[#ffe9c7] to-[#cfeaf5]">
       <Meters />
@@ -26,6 +29,7 @@ export default function App() {
         <div className="pointer-events-none absolute inset-x-0 top-3">
           <MoodBubble />
         </div>
+        <AccountButton />
         {new URLSearchParams(location.search).has('dev') && <DevPanel />}
       </div>
       <InstallPrompt />
