@@ -8,12 +8,28 @@ export function Scene() {
     <Canvas
       dpr={[1, 2]}
       camera={{ position: [3.0, 2.1, 5.0], fov: 38 }}
-      gl={{ alpha: true, antialias: true, powerPreference: 'high-performance' }}
+      gl={{
+        alpha: true,
+        antialias: true,
+        powerPreference: 'high-performance',
+      }}
       style={{ touchAction: 'none' }}
-      onCreated={({ camera }) => camera.lookAt(0, 0.8, 0.2)}
+      onCreated={({ camera }) => {
+        // Dev aid: `?cam=front|side|back|top` views the dog from another angle.
+        const cam = new URLSearchParams(location.search).get('cam')
+        const views: Record<string, [number, number, number]> = {
+          front: [0, 1.3, 5.6],
+          side: [5.6, 1.3, 0],
+          back: [0, 1.6, -5.6],
+          top: [0.01, 6.5, 0.8],
+        }
+        if (cam && views[cam]) camera.position.set(...views[cam])
+        camera.lookAt(0, 0.8, 0.2)
+      }}
     >
-      <hemisphereLight args={['#fff6e8', '#9fc78a', 1.5]} />
-      <directionalLight position={[3, 5, 4]} intensity={2.4} />
+      <hemisphereLight args={['#fff3e0', '#d9c3a0', 0.85]} />
+      <directionalLight position={[3, 5, 4]} intensity={1.9} />
+      <directionalLight position={[-4, 2, 2]} intensity={0.5} />
       {/* Ground + cheap blob shadow */}
       <mesh rotation-x={-Math.PI / 2} position={[0, -0.001, 0]}>
         <circleGeometry args={[2.3, 40]} />

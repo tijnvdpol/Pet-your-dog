@@ -17,7 +17,7 @@ export default function App() {
   const customizing = useCustomize((s) => s.open)
   useSync()
   return (
-    <div className="mx-auto flex h-dvh max-w-[480px] flex-col bg-gradient-to-b from-[#ffe9c7] to-[#cfeaf5]">
+    <div className="mx-auto flex h-dvh max-w-[480px] flex-col bg-gradient-to-b from-[#f6d6a8] to-[#bfe0ee]">
       <Meters />
       <div className="relative min-h-0 flex-1">
         <Suspense

@@ -89,6 +89,10 @@ Geen nieuw 3D-model per hond genereren, maar een paar geriggede basismodellen pe
 
 ### Stijl
 
+> **Model v3 (low-poly, naar referentie):** de gladde delen worden met meshoptimizer vereenvoudigd tot grote vlakken, plat geschaduwd en per vlak in harde kleurblokken geverfd (crème en bruin), met hoekige oren, kleine ogen, een grote neus en pootjes met tenen. ~1.900 driehoeken.
+>
+> **Model v2 (basis):** de hond is geen verzameling bollen meer, maar glad gemodelleerde delen (lijf, kop, staart, voor- en achterpoot) uit signed-distance-fields (`src/dog/sdf.ts`, `mesher.ts`, `dogParts.ts`). Vachtkleuren en aftekeningen zitten als vertexkleuren in het oppervlak. ~16k driehoeken, opbouw ~0,15–0,3 s bij elke wijziging.
+
 Gestileerd en schattig, niet realistisch: toon-shading of zachte low-poly, iets grotere ogen en kop, zachte kleuren. Vacht via shading, geen losse haren.
 
 ### Animaties (minimaal)
