@@ -47,11 +47,16 @@ class Spring {
     this.omega = omega
     this.zeta = zeta
   }
+  /** Semi-implicit Euler in small sub-steps: stable at any frame rate. */
   step(target: number, dt: number) {
-    const a =
-      this.omega * this.omega * (target - this.x) - 2 * this.zeta * this.omega * this.v
-    this.v += a * dt
-    this.x += this.v * dt
+    const n = Math.max(1, Math.ceil(dt * 240))
+    const h = dt / n
+    for (let i = 0; i < n; i++) {
+      const a =
+        this.omega * this.omega * (target - this.x) - 2 * this.zeta * this.omega * this.v
+      this.v += a * h
+      this.x += this.v * h
+    }
     return this.x
   }
   reset() {

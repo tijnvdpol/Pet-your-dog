@@ -89,12 +89,13 @@ Geen nieuw 3D-model per hond genereren, maar een paar geriggede basismodellen pe
 
 ### Stijl
 
-> **Model v4 (in ontwikkeling, SDF in code → GLB):** gestileerde chocoladelabrador-pup, gebouwd door `tools/dog/build.ts` (SDF + smooth union → surface nets → glad, ~12,5k driehoeken lijf + losse ogen/neus/tong), met 32-botten skelet, automatische skin weights, morph targets (oren, snuit, bouw, staart, gezicht) en 11 keyframe-clips. Resultaat: `public/models/dog_large.glb` (~380 kB), te bekijken op `/dev/dog`. Rondes en screenshots: `previews/round_N/`.
+> **Model v4 (in gebruik, SDF in code → GLB):** gestileerde chocoladelabrador-pup, gebouwd door `tools/dog/build.ts` (SDF + smooth union → surface nets → glad, ~12,5k driehoeken lijf + losse ogen/neus/tong), met 32-botten skelet, automatische skin weights, morph targets (oren, snuit, bouw, staart, gezicht) en 11 keyframe-clips. Resultaat: `public/models/dog_large.glb` (~380 kB), te bekijken op `/dev/dog`. Rondes en screenshots: `previews/round_N/`.
 >
 > - [x] Ronde 1: model, skelet, morphs, animaties, `src/components/Dog.tsx`, `/dev/dog` met leva
 > - [x] Ronde 2: ambient occlusion, silhouet-randlicht, teentjes, levendiger Run/Jump, morph-fixes
 > - [x] Ronde 3: hond kijkt je aan, liggende poses, kleur- en aftekeningsvarianten
-> - [ ] Integratie: nieuwe `Dog.tsx` vervangt `src/dog/Dog.tsx` in de app (aaizones, voeren, slapen, mokken)
+> - [x] Integratie: `src/dog/LiveDog.tsx` koppelt spelstatus aan de animaties (aaien achter de oren = trappelende poot, rug/buik = kwispelen, voeren met bak, slapen, beledigd omdraaien, blij springen, verwaarloosd = zielig liggen); aaizones via de botten van het aangeraakte punt; de oude in-browser-hond is verwijderd
+> - [ ] Pootlengte als morph (teckel/corgi); klein en middel zijn nu alleen geschaald
 >
 > **Model v3 (low-poly, naar referentie):** de gladde delen worden met meshoptimizer vereenvoudigd tot grote vlakken, plat geschaduwd en per vlak in harde kleurblokken geverfd (crème en bruin), met hoekige oren, kleine ogen, een grote neus en pootjes met tenen. ~1.900 driehoeken.
 >
@@ -167,7 +168,7 @@ Vijf fases; elke fase levert een werkende versie op die je kunt laten zien. Begi
 ### Fase 1 – Hond leeft (lokaal, geen backend)
 
 - [x] Project opzetten: Vite + React + TS, Tailwind, R3F + drei, Zustand, oxlint/Prettier
-- [x] Hond zelf maken als parametrisch model in code (geen extern model nodig, geen licentie); zie `src/dog/Dog.tsx` en `appearance.ts`
+- [x] Hond zelf maken als parametrisch model in code (geen extern model nodig, geen licentie); nu `tools/dog/` (bouwt de GLB), `src/components/Dog.tsx` en `appearance.ts`
 - [x] Camera en licht instellen, idle-animatie afspelen (met placeholder-hond; GLB laden volgt zodra er een model is)
 - [x] Aaien: vegen over de hond → kwispelen + trilletje; zones (kop, rug, buik)
 - [x] Meters (honger, energie, blijheid) met daalformule, lokaal opgeslagen in localStorage

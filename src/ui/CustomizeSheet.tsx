@@ -134,7 +134,7 @@ function LookTab() {
               className="h-10 w-14"
               aria-label="Tweede kleur"
             />
-            Oren en staart
+            {look.marking === 'none' ? 'Borst, snuit en poten' : 'Aftekening'}
           </label>
         </div>
       </Field>
@@ -178,15 +178,6 @@ function LookTab() {
         left="Slank"
         right="Stevig"
         onChange={(build) => set({ build })}
-      />
-      <Slider
-        label="Pootlengte"
-        value={look.legLength}
-        min={0.4}
-        max={0.85}
-        left="Kort"
-        right="Lang"
-        onChange={(legLength) => set({ legLength })}
       />
     </div>
   )

@@ -6,8 +6,10 @@ import {
   LoopRepeat,
   MathUtils,
   Quaternion,
+  Sphere,
   Vector3,
   type AnimationAction,
+  type SkinnedMesh,
   type Mesh,
   type Object3D,
 } from 'three'
@@ -144,6 +146,14 @@ export function Dog({
               : mats.coat
       m.castShadow = false
       m.frustumCulled = false // skinned bounds do not follow the animation
+      const sk = m as SkinnedMesh
+      if (sk.isSkinnedMesh) {
+        // raycasting (petting) tests this sphere first: make it cover every pose, incl. jumps
+        m.updateMatrix()
+        sk.boundingSphere = new Sphere(new Vector3(0, 0.75, 0), 1.3).applyMatrix4(
+          m.matrix.clone().invert(),
+        )
+      }
       list.push(m)
     })
     return list
